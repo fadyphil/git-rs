@@ -1,0 +1,13 @@
+[package]
+name = "git-rs"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name="git-rs"
+path="src/main.rs"
+
+[dependencies]
+sha1 = "0.11.0"
+flate2 = "1.0"
+hex = "0.4"
