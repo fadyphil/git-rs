@@ -20,57 +20,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     run(&args)
 }
 
+fn expect_args(args: &[String], expected: usize, usage: &str) {
+    if args.len() != expected {
+        eprintln!("Usage : {}", usage);
+        std::process::exit(1)
+    }
+}
+
 fn run(args: &Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
     match args[1].as_str() {
         "init" => {
-            if args.len() != 2 {
-                eprintln!("Usage git-rs init");
-                std::process::exit(1);
-            }
-            create_dir_structure()?;
+            expect_args(args, 2, "Usage git-rs init");
+            cmd_init()?;
             Ok(())
         }
         "cat-file" => {
-            if args.len() != 4 {
-                eprintln!("Usage: git-rs cat-file -<flag> <file>");
-                std::process::exit(1)
-            }
-            let (kind, content) = read_object(&args[3])?;
-            let flag: &str = args[2].as_str();
-            match flag {
-                "-p" => {
-                    print!("{}", String::from_utf8_lossy(&content))
-                }
-                "-t" => {
-                    print!("{}", &kind)
-                }
-                "-s" => {
-                    println!("{}", &content.len())
-                }
-                unknown => {
-                    eprintln!(
-                        "unknown flag {} \n -p for pretty print \n -t for type\n -s for size\n Usage git-rs cat-file <flag> <hash>",
-                        unknown
-                    );
-                    std::process::exit(1)
-                }
-            }
-
+            expect_args(args, 4, "git-rs cat-file <-p|-t|-s> <hash>");
+            cmd_cat_file(&args[2], &args[3])?;
             Ok(())
         }
         "write-tree" => Ok(()),
-        "hash" => {
-            if args.len() < 3 {
-                eprintln!("Usage git-rs hash <file>");
-                std::process::exit(1)
-            }
-            let file = read_file(&args[2])?;
-
-            let created_obj = write_object("blob", file.as_bytes());
-            println!(
-                "This is the result of write_object func :  {:?}",
-                created_obj
-            );
+        "hash-object" => {
+            expect_args(args, 4, "git-rs hash-object -w <file>");
+            cmd_hash_object(&args[3], &args[2])?;
             Ok(())
         }
         unknown => {
@@ -80,16 +52,54 @@ fn run(args: &Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
-fn read_file(path: &str) -> Result<String, Box<dyn std::error::Error>> {
-    let contents = fs::read_to_string(path)?;
-    Ok(contents)
-}
-
-fn create_dir_structure() -> Result<(), Box<dyn std::error::Error>> {
+fn cmd_init() -> Result<(), Box<dyn std::error::Error>> {
     fs::create_dir_all(".git/objects/info")?;
     fs::create_dir_all(".git/objects/pack/")?;
     fs::create_dir_all(".git/refs/heads/")?;
     fs::create_dir_all(".git/refs/tags/")?;
     fs::write(".git/HEAD", "ref: refs/heads/main\n")?;
+    Ok(())
+}
+
+fn cmd_cat_file(flag: &str, hash: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let (kind, content) = read_object(hash)?;
+    match flag {
+        "-p" => {
+            print!("{}", String::from_utf8_lossy(&content))
+        }
+        "-t" => {
+            println!("{}", &kind)
+        }
+        "-s" => {
+            println!("{}", &content.len())
+        }
+        unknown => {
+            eprintln!(
+                "unknown flag {} \n -p for pretty print \n -t for type\n -s for size\n Usage git-rs cat-file <flag> <hash>",
+                unknown
+            );
+            std::process::exit(1)
+        }
+    }
+    Ok(())
+}
+
+fn cmd_hash_object(file: &str, flag: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let content = fs::read(file)?;
+    match flag {
+        "-w" => {
+            let hash = write_object("blob", &content)?;
+
+            println!("{}", hash);
+        }
+        unknown => {
+            eprintln!(
+                "unknown flag  : {}\n Usage git-rs hash-object -w <file>",
+                unknown
+            );
+            std::process::exit(1);
+        }
+    }
+
     Ok(())
 }
