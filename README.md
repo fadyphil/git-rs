@@ -1,7 +1,7 @@
 # git-rs
 
 🚧 **Status:** Phase 2 Complete | Phase 3 In Progress  
-📖 **Blueprint:** [Build Git From Scratch in Rust](build-git-in-rust.md)
+📖 **Blueprint:** [Build Git From Scratch in Rust](docs/build-git-in-rust.md)
 
 ## 🌟 Overview
 
