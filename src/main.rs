@@ -31,12 +31,31 @@ fn run(args: &Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         }
         "cat-file" => {
-            if args.len() < 3 {
-                eprintln!("Usage: git-rs cat-file -p <file>");
+            if args.len() != 4 {
+                eprintln!("Usage: git-rs cat-file -<flag> <file>");
                 std::process::exit(1)
             }
-            let content = read_object(&args[2]);
-            println!("{:?}", content);
+            let (kind, content) = read_object(&args[3])?;
+            let flag: &str = args[2].as_str();
+            match flag {
+                "-p" => {
+                    print!("{}", String::from_utf8_lossy(&content))
+                }
+                "-t" => {
+                    print!("{}", &kind)
+                }
+                "-s" => {
+                    println!("{}", &content.len())
+                }
+                unknown => {
+                    eprintln!(
+                        "unknown flag {} \n -p for pretty print \n -t for type\n -s for size\n Usage git-rs cat-file <flag> <hash>",
+                        unknown
+                    );
+                    std::process::exit(1)
+                }
+            }
+
             Ok(())
         }
         "write-tree" => Ok(()),
