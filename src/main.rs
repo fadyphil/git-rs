@@ -3,10 +3,8 @@ mod object;
 use std::env;
 use std::fs;
 
-// use crate::object::compress_blob;
-// use crate::object::create_blob;
-// use crate::object::decompress_blob;
-// use crate::object::hash_blob;
+use crate::object::read_object;
+use crate::object::write_object;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Reads the input arguments ex: git commit path/to/file.md
@@ -34,11 +32,11 @@ fn run(args: &Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
         }
         "cat-file" => {
             if args.len() < 3 {
-                eprintln!("Usage: git-rs cat-file <file>");
+                eprintln!("Usage: git-rs cat-file -p <file>");
                 std::process::exit(1)
             }
-            let content = read_file(args[2].as_str())?;
-            println!("{}", content);
+            let content = read_object(&args[2]);
+            println!("{:?}", content);
             Ok(())
         }
         "write-tree" => Ok(()),
@@ -47,11 +45,13 @@ fn run(args: &Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
                 eprintln!("Usage git-rs hash <file>");
                 std::process::exit(1)
             }
-            let file = read_file(&args[2]);
+            let file = read_file(&args[2])?;
 
-            // let hashed_blob = hash_blob(blob);
-
-            println!("{:?}", file);
+            let created_obj = write_object("blob", file.as_bytes());
+            println!(
+                "This is the result of write_object func :  {:?}",
+                created_obj
+            );
             Ok(())
         }
         unknown => {
