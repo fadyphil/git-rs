@@ -78,7 +78,6 @@ fn object_path(hash: &str) -> PathBuf {
     let file_name = &hash[2..];
     let dir = &hash[..2];
     let path = PathBuf::from(base).join(dir).join(file_name);
-    println!("{:?}", path);
     path
 }
 
