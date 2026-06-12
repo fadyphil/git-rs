@@ -1,6 +1,6 @@
 <div align="center">
 
-# <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg" width="36" height="36" style="vertical-align: middle;"/> git-rs
+# <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg" width="36" height="36"/> git-rs
 
 ### Demystifying Version Control from First Principles
 
