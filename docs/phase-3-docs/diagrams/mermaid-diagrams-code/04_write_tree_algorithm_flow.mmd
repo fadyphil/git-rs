@@ -1,0 +1,47 @@
+flowchart TD
+    %% Write-Tree Algorithm - Complete Data Flow
+    %% Shows the recursive process with decision points
+
+    START(["Start: write-tree<br/>called on directory"]) --> READ_DIR["Read all entries<br/>in directory"]
+    READ_DIR --> SORT["Sort entries<br/>lexicographically<br/>by filename"]
+    SORT --> INIT_BUF["Initialize empty<br/>tree buffer"]
+    INIT_BUF --> GET_FIRST["Get next entry<br/>from sorted list"]
+
+    GET_FIRST --> CHECK_TYPE{"Entry type?"}
+
+    CHECK_TYPE -->|"Regular File"| HASH_BLOB["1. Read file content<br/>2. Compute SHA-1 hash<br/>3. zlib compress<br/>4. Store as blob object<br/>5. Return blob hash"]
+
+    CHECK_TYPE -->|"Subdirectory"| RECURSE["Recursive call:<br/>write-tree(subdir)"]
+    RECURSE --> TREE_HASH["Returns sub-tree hash"]
+
+    CHECK_TYPE -->|"No more entries"| FINAL_HASH["Compute SHA-1 of<br/>complete tree buffer<br/>(sorted entries + hashes)"]
+
+    HASH_BLOB --> BLOB_ENTRY["Format entry:<br/>'100644 filename\0<br/>20-byte blob_hash'"]
+    TREE_HASH --> TREE_ENTRY["Format entry:<br/>'040000 dirname\0<br/>20-byte tree_hash'"]
+
+    BLOB_ENTRY --> APPEND_BLOB["Append to<br/>tree buffer"]
+    TREE_ENTRY --> APPEND_TREE["Append to<br/>tree buffer"]
+
+    APPEND_BLOB --> GET_FIRST
+    APPEND_TREE --> GET_FIRST
+
+    FINAL_HASH --> STORE_TREE["zlib compress<br/>tree content<br/>store in .git/objects/<br/>return tree hash"]
+    STORE_TREE --> END(["Return tree hash<br/>to caller"])
+
+    %% Styling
+    style START fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px,color:#000
+    style END fill:#ffebee,stroke:#c62828,stroke-width:3px,color:#000
+    style READ_DIR fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
+    style SORT fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
+    style INIT_BUF fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
+    style GET_FIRST fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000
+    style CHECK_TYPE fill:#fff9c4,stroke:#f9a825,stroke-width:3px,color:#000
+    style HASH_BLOB fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#000
+    style RECURSE fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#000
+    style TREE_HASH fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px,color:#000
+    style BLOB_ENTRY fill:#e0f2f1,stroke:#00695c,stroke-width:2px,color:#000
+    style TREE_ENTRY fill:#e0f2f1,stroke:#00695c,stroke-width:2px,color:#000
+    style APPEND_BLOB fill:#e0f2f1,stroke:#00695c,stroke-width:2px,color:#000
+    style APPEND_TREE fill:#e0f2f1,stroke:#00695c,stroke-width:2px,color:#000
+    style FINAL_HASH fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
+    style STORE_TREE fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000

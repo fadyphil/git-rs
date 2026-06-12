@@ -1,10 +1,13 @@
 mod object;
+mod tree;
 
 use std::env;
 use std::fs;
+use std::path::Path;
 
 use crate::object::read_object;
 use crate::object::write_object;
+use crate::tree::write_tree;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Reads the input arguments ex: git commit path/to/file.md
@@ -39,7 +42,13 @@ fn run(args: &Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
             cmd_cat_file(&args[2], &args[3])?;
             Ok(())
         }
-        "write-tree" => Ok(()),
+        "write-tree" => {
+            expect_args(args, 2, "git-rs write-tree");
+            let current_path = Path::new(".");
+            let tree_hash = cmd_write_tree(&current_path)?;
+            println!("{}", tree_hash);
+            Ok(())
+        }
         "hash-object" => {
             expect_args(args, 4, "git-rs hash-object -w <file>");
             cmd_hash_object(&args[3], &args[2])?;
@@ -102,4 +111,9 @@ fn cmd_hash_object(file: &str, flag: &str) -> Result<(), Box<dyn std::error::Err
     }
 
     Ok(())
+}
+
+fn cmd_write_tree(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
+    let tree_hash = write_tree(path)?;
+    Ok(tree_hash)
 }
