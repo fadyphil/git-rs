@@ -1,6 +1,3 @@
----
-banner: pics/git.jpg
----
 # Build Git From Scratch in Rust
 
 ## A Deep Learning Blueprint — No Detail Too Small
