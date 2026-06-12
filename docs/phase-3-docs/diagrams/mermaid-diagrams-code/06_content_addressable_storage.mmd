@@ -1,0 +1,37 @@
+graph LR
+    %% Content-Addressable Storage: How Git Objects Are Named
+
+    subgraph "Input: File Content"
+        CONTENT["fn main() {<br/>    println!(Hello);<br/>}"]
+    end
+
+    subgraph "Hashing Process"
+        HEADER["Git Object Header<br/>'blob 28\0'"]
+        CONCAT["Concatenate:<br/>header + content"]
+        SHA1["SHA-1 Hash<br/>Function"]
+    end
+
+    subgraph "Output: Object Identity"
+        HASH_FULL["e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"]
+        HASH_DIR[".git/objects/<br/>e6/"]
+        HASH_FILE["9de29b...b8b29ae775ad8c2e48c5391"]
+    end
+
+    CONTENT --> CONCAT
+    HEADER --> CONCAT
+    CONCAT --> SHA1
+    SHA1 --> HASH_FULL
+    HASH_FULL --> HASH_DIR
+    HASH_FULL --> HASH_FILE
+
+    %% Second example showing deduplication
+    CONTENT2["Same content<br/>elsewhere"] -.->|"Same hash"| HASH_FULL
+
+    style CONTENT fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
+    style CONTENT2 fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
+    style HEADER fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000
+    style CONCAT fill:#fff9c4,stroke:#f9a825,stroke-width:2px,color:#000
+    style SHA1 fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px,color:#000
+    style HASH_FULL fill:#ffebee,stroke:#c62828,stroke-width:3px,color:#000
+    style HASH_DIR fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px,color:#000
+    style HASH_FILE fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px,color:#000

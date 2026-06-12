@@ -1,0 +1,65 @@
+graph TD
+    %% Comprehensive Git Object Model
+    %% Shows ALL object types and ALL relationships
+
+    subgraph "References Layer"
+        HEAD["HEAD<br/><small>ref: refs/heads/main</small>"]
+        MAIN["refs/heads/main"]
+        TAG["refs/tags/v1.0.0<br/><small>annotated tag object</small>"]
+    end
+
+    subgraph "Commit Layer"
+        CM1["Commit abc123<br/>─────────────────<br/>tree: def456<br/>parent: (none)<br/>author: Fady<br/>message: 'Initial commit'"]
+        CM2["Commit ghi789<br/>─────────────────<br/>tree: jkl012<br/>parent: abc123<br/>author: Fady<br/>message: 'Add feature'"]
+    end
+
+    subgraph "Tree Layer"
+        TR1["Tree def456 (root)<br/>─────────────────<br/>100644 README → blob1<br/>100644 Cargo.toml → blob2<br/>040000 src/ → tree3"]
+        TR2["Tree jkl012 (root)<br/>─────────────────<br/>100644 README → blob1<br/>100644 Cargo.toml → blob4<br/>040000 src/ → tree4"]
+        TR3["Tree tree3 (src/)<br/>─────────────────<br/>100644 main.rs → blob5<br/>100644 lib.rs → blob6"]
+        TR4["Tree tree4 (src/)<br/>─────────────────<br/>100644 main.rs → blob7<br/>100644 lib.rs → blob6"]
+    end
+
+    subgraph "Blob Layer"
+        BL1["Blob blob1<br/>SHA-1: a1b2c3d<br/>─────────────────<br/>'# Git-RS'"]
+        BL2["Blob blob2<br/>SHA-1: e4f5g6h<br/>─────────────────<br/>'[package] name=git-rs'"]
+        BL3["Blob blob4<br/>SHA-1: i7j8k9l<br/>─────────────────<br/>'[package] name=git-rs v2'"]
+        BL4["Blob blob5<br/>SHA-1: m0n1o2p<br/>─────────────────<br/>'fn main() {}'"]
+        BL5["Blob blob7<br/>SHA-1: q3r4s5t<br/>─────────────────<br/>'fn main() { println!(); }'"]
+        BL6["Blob blob6<br/>SHA-1: u6v7w8x<br/>─────────────────<br/>'pub mod objects;'"]
+    end
+
+    HEAD --> MAIN
+    MAIN --> CM2
+    TAG -.-> CM1
+
+    CM1 --> TR1
+    CM2 --> TR2
+    CM2 -.->|parent| CM1
+
+    TR1 --> BL1
+    TR1 --> BL2
+    TR1 --> TR3
+    TR2 --> BL1
+    TR2 --> BL3
+    TR2 --> TR4
+    TR3 --> BL4
+    TR3 --> BL6
+    TR4 --> BL5
+    TR4 --> BL6
+
+    style HEAD fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#000
+    style MAIN fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#000
+    style TAG fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000
+    style CM1 fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
+    style CM2 fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
+    style TR1 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#000
+    style TR2 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#000
+    style TR3 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#000
+    style TR4 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#000
+    style BL1 fill:#fff8e1,stroke:#f9a825,stroke-width:2px,color:#000
+    style BL2 fill:#fff8e1,stroke:#f9a825,stroke-width:2px,color:#000
+    style BL3 fill:#fff8e1,stroke:#f9a825,stroke-width:2px,color:#000
+    style BL4 fill:#fff8e1,stroke:#f9a825,stroke-width:2px,color:#000
+    style BL5 fill:#fff8e1,stroke:#f9a825,stroke-width:2px,color:#000
+    style BL6 fill:#fff8e1,stroke:#f9a825,stroke-width:2px,color:#000

@@ -1,0 +1,62 @@
+graph TD
+    %% Directory to Tree Object Transformation
+    %% Visual mapping from filesystem to Git object store
+
+    subgraph "Working Directory"
+        direction TB
+        WD_ROOT["my-project/"]
+        WD_README["README.md<br/><small>'# My Project'</small>"]
+        WD_CARGO["Cargo.toml"]
+        WD_SRC["src/"]
+        WD_MAIN["main.rs<br/><small>'fn main() {}'</small>"]
+        WD_LIB["lib.rs<br/><small>'pub mod objects;'</small>"]
+    end
+
+    WD_ROOT --> WD_README
+    WD_ROOT --> WD_CARGO
+    WD_ROOT --> WD_SRC
+    WD_SRC --> WD_MAIN
+    WD_SRC --> WD_LIB
+
+    subgraph "Git Object Store (.git/objects/)"
+        direction TB
+
+        subgraph "Tree Objects"
+            T_ROOT["Tree: 4d69c98...<br/>─────────────────<br/>100644 README.md → a1b2c3<br/>100644 Cargo.toml → d4e5f6<br/>040000 src → 0ec3ee..."]
+            T_SRC["Tree: 0ec3ee...<br/>─────────────────<br/>100644 main.rs → 7a8b9c<br/>100644 lib.rs → 2d3e4f"]
+        end
+
+        subgraph "Blob Objects"
+            B_README["Blob: a1b2c3...<br/>─────────────────<br/>'# My Project'"]
+            B_CARGO["Blob: d4e5f6...<br/>─────────────────<br/>'[package]...'"]
+            B_MAIN["Blob: 7a8b9c...<br/>─────────────────<br/>'fn main() {}'"]
+            B_LIB["Blob: 2d3e4f...<br/>─────────────────<br/>'pub mod objects;'"]
+        end
+    end
+
+    T_ROOT --> T_SRC
+    T_ROOT --> B_README
+    T_ROOT --> B_CARGO
+    T_SRC --> B_MAIN
+    T_SRC --> B_LIB
+
+    %% Cross-layer mapping arrows
+    WD_README -.->|"hash →"| B_README
+    WD_CARGO -.->|"hash →"| B_CARGO
+    WD_SRC -.->|"write-tree →"| T_SRC
+    WD_MAIN -.->|"hash →"| B_MAIN
+    WD_LIB -.->|"hash →"| B_LIB
+    WD_ROOT -.->|"write-tree →"| T_ROOT
+
+    style WD_ROOT fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#000
+    style WD_SRC fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
+    style WD_README fill:#fff8e1,stroke:#f9a825,stroke-width:2px,color:#000
+    style WD_CARGO fill:#fff8e1,stroke:#f9a825,stroke-width:2px,color:#000
+    style WD_MAIN fill:#fff8e1,stroke:#f9a825,stroke-width:2px,color:#000
+    style WD_LIB fill:#fff8e1,stroke:#f9a825,stroke-width:2px,color:#000
+    style T_ROOT fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px,color:#000
+    style T_SRC fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#000
+    style B_README fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px,color:#000
+    style B_CARGO fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px,color:#000
+    style B_MAIN fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px,color:#000
+    style B_LIB fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px,color:#000

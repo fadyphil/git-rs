@@ -1,0 +1,37 @@
+graph TD
+    %% Git DAG Evolution - How history grows
+
+    subgraph "Commit History (DAG)"
+        direction LR
+
+        C1["C1: Initial<br/>tree-a"] --> C2["C2: Add README<br/>tree-b"]
+        C2 --> C3["C3: Add src/<br/>tree-c"]
+        C3 --> C4["C4: Hotfix<br/>tree-d"]
+        C3 --> C5["C5: Feature<br/>tree-e"]
+        C4 --> C6["C6: Merge<br/>tree-f"]
+        C5 --> C6
+    end
+
+    subgraph "Tree Objects"
+        direction TB
+        T1["tree-a<br/>README → blob1"] 
+        T2["tree-b<br/>README → blob2"]
+        T3["tree-c<br/>README → blob2<br/>src/ → tree-x"]
+        T4["tree-d<br/>README → blob3<br/>src/ → tree-x"]
+        T5["tree-e<br/>README → blob2<br/>src/ → tree-y"]
+        T6["tree-f<br/>README → blob3<br/>src/ → tree-z"]
+    end
+
+    C1 -.-> T1
+    C2 -.-> T2
+    C3 -.-> T3
+    C4 -.-> T4
+    C5 -.-> T5
+    C6 -.-> T6
+
+    style C1 fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#000
+    style C2 fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#000
+    style C3 fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#000
+    style C4 fill:#fff9c4,stroke:#f57f17,stroke-width:2px,color:#000
+    style C5 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#000
+    style C6 fill:#f3e5f5,stroke:#6a1b9a,stroke-width:3px,color:#000
