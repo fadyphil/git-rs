@@ -1,6 +1,8 @@
 <div align="center">
 
-# <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg" width="36" height="36"/> git-rs
+<img src="https://img.icons8.com/color/96/git.png" alt="git" align="middle"/>
+
+# Git-rs
 
 ### Demystifying Version Control from First Principles
 
