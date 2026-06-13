@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Status-Phase_3_Complete-success?" alt="Status" />
+  <img src="https://img.shields.io/badge/Status-Phase_4_Complete-success?" alt="Status" />
   <img src="https://img.shields.io/badge/License-MIT-royalblue" alt="License" />
 </p>
 
@@ -47,6 +47,7 @@ By building Git's content-addressable storage, SHA-1 hashing, Zlib compression, 
 | `hash-object -w <file>` | Reads a file, constructs the Git blob format, computes SHA-1, compresses with Zlib, and stores it. | Byte buffers (`Vec<u8>`), Cryptographic hashing, Zlib streams |
 | `cat-file <-p\|-t\|-s> <hash>` | Locates, decompresses, parses, and displays stored objects. | Binary parsing, Null-byte delimiters, UTF-8 coercion |
 | `write-tree` | Snapshots the current directory into a binary tree object. | **Post-order DFS recursion**, Binary serialization, Raw 20-byte hashing |
+| `commit-tree <tree-hash> -m <message>` | Creates a commit object with author/committer signatures and parent references. | **Commit object format**, Signature serialization, DAG parent linking |
 
 ---
 
@@ -68,6 +69,23 @@ Git does not use JSON, XML, or high-level abstractions. It relies on a strict, c
 │  [ BINARY PAYLOAD ]                                        │
 │  "100644 README.md\0" + [20 Raw SHA-1 Bytes]               │
 │  "040000 src\0"       + [20 Raw SHA-1 Bytes]               │
+└────────────────────────────────────────────────────────────┘
+```
+
+### Commit Object Format
+
+Commit objects use a human-readable ASCII format with key-value headers:
+
+```text
+┌────────────────────────────────────────────────────────────┐
+│  COMMIT OBJECT (ASCII text, not binary)                    │
+├────────────────────────────────────────────────────────────┤
+│  tree <tree-hash>\n                                        │
+│  parent <parent-hash>\n        (optional, for merge commits)│
+│  author <name> <<email>> <timestamp> <timezone>\n           │
+│  committer <name> <<email>> <timestamp> <timezone>\n        │
+│  \n                                                         │
+│  <commit message>\n                                         │
 └────────────────────────────────────────────────────────────┘
 ```
 
@@ -114,6 +132,10 @@ echo "Hello Git Internals" > test.txt
 # Snapshot the directory
 ../target/release/git-rs write-tree
 # → 4b825dc642cb6eb9a060e54bf8d69288fbee4904
+
+# Create a commit from the tree
+../target/release/git-rs commit-tree <tree-hash> -m "Initial commit"
+# → 9c5a8c9e8c9e8c9e8c9e8c9e8c9e8c9e8c9e8c9e
 ```
 
 ---
@@ -128,6 +150,16 @@ git cat-file -p <tree-hash>
 
 # Expected Output:
 # 100644 blob b6fc4c...    test.txt
+
+# Verify a commit object created by git-rs
+git cat-file -p <commit-hash>
+
+# Expected Output:
+# tree 4b825dc642cb6eb9a060e54bf8d69288fbee4904
+# author Fady <fady@test.com> 1718000000 +0000
+# committer Fady <fady@test.com> 1718000000 +0000
+#
+# Initial commit
 ```
 
 If official Git can read the database, the binary format is mathematically correct.
@@ -143,8 +175,8 @@ If official Git can read the database, the binary format is mathematically corre
 | **1** | `init` & `.git/` structure | ✅ **Complete** |
 | **2** | `hash-object`, `cat-file` & object storage | ✅ **Complete** |
 | **3** | `write-tree` & binary serialization | ✅ **Complete** |
-| **4** | `commit-tree` & DAG parent references | 🔲 **In Progress** |
-| **5** | `commit` & `refs/HEAD` management | 🔲 Planned |
+| **4** | `commit-tree` & DAG parent references | ✅ **Complete** |
+| **5** | `commit` workflow & `refs/HEAD` management | 🔲 **In Progress** |
 | **6** | `export-snapshot` & LLM Wiki integration | 🔲 Planned |
 
 ---
@@ -156,7 +188,8 @@ src/
 ├── main.rs          # CLI dispatcher, argument routing, and command execution
 ├── object.rs        # SHA-1 hashing, Zlib compression, read/write objects
 ├── tree.rs          # Recursive directory walking, binary tree serialization
-├── commit.rs        # (Next) Commit metadata, human-readable payloads, DAG construction
+├── commit.rs        # Commit creation, signature serialization, DAG parent linking
+├── store.rs         # Object database read/write abstraction
 └── refs.rs          # (Next) HEAD pointer, branch reference management
 ```
 
@@ -168,7 +201,7 @@ This project is a deliberate exercise in systems programming:
 
 1. **Memory & Ownership:** Master Rust's borrow checker, `&[u8]` slices, and zero-copy parsing.
 2. **Binary Protocols:** Implement strict serialization (null-byte separators, raw 20-byte hashes vs 40-char hex strings).
-3. **Graph Theory:** Understand how Directed Acyclic Graphs (DAGs) enforce history integrity and enable deduplication.
+3. **Graph Theory:** Understand how Directed Acyclic Graphs (DAGs) enforce history integrity and enable deduplication. Commit objects form the vertices of the DAG, with parent references creating the edges.
 4. **CLI Architecture:** Build a production-grade dispatcher with strict argument validation and clean error propagation.
 
 ---
