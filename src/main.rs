@@ -1,3 +1,4 @@
+mod commit;
 mod object;
 mod tree;
 
@@ -5,6 +6,7 @@ use std::env;
 use std::fs;
 use std::path::Path;
 
+use crate::commit::write_commit_object;
 use crate::object::read_object;
 use crate::object::write_object;
 use crate::tree::write_tree;
@@ -52,6 +54,12 @@ fn run(args: &Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
         "hash-object" => {
             expect_args(args, 4, "git-rs hash-object -w <file>");
             cmd_hash_object(&args[3], &args[2])?;
+            Ok(())
+        }
+        "commit-tree" => {
+            expect_args(args, 5, "git-rs commit-tree <tree-hash> -m <message>");
+            let commit_hash = cmd_write_commit(args[2].clone(), args[4].clone(), None, &args[3])?;
+            println!("{}", commit_hash);
             Ok(())
         }
         unknown => {
@@ -116,4 +124,25 @@ fn cmd_hash_object(file: &str, flag: &str) -> Result<(), Box<dyn std::error::Err
 fn cmd_write_tree(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
     let tree_hash = write_tree(path)?;
     Ok(tree_hash)
+}
+
+fn cmd_write_commit(
+    tree_hash: String,
+    commit_message: String,
+    parent_hash: Option<String>,
+    flag: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
+    match flag {
+        "-m" => {
+            let commit_hash = write_commit_object(tree_hash, commit_message, parent_hash)?;
+            Ok(commit_hash)
+        }
+        unkown => {
+            eprintln!(
+                "unknown flag  : {}\n Usage git-rs commit <tree-hash> -m <message>",
+                unkown
+            );
+            std::process::exit(1);
+        }
+    }
 }
