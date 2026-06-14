@@ -168,6 +168,20 @@ If official Git can read the database, the binary format is mathematically corre
 
 <a id="roadmap"></a>
 
+## 📚 Documentation
+
+| Document | Phase | Description |
+|----------|-------|-------------|
+| [Git Internals](docs/01_git_internals.md) | 1–3 | Content-addressable storage, blob/tree objects, binary serialization |
+| [Engineering Journal](docs/02_engineering_journal.md) | 1–3 | Development log: decisions, trade-offs, and lessons learned |
+| [Lessons Learned](docs/03_lessons_learned.md) | 1–3 | Key takeaways from implementing Git's object model |
+| [Build Git in Rust Guide](docs/build-git-in-rust.md) | 1–3 | Step-by-step guide for building Git from scratch in Rust |
+| [Architecture Documentation](docs/phase-3-docs/Git_RS_Architecture_Documentation.md) | 3 | Visual guides to the Git object model, DAG, and write-tree algorithm |
+| [**Commit Objects & the DAG**](docs/04_commit_object_and_commit_tree.md) | **4** | **Commit object format, DAG structure, parent references, and serialization** |
+| [**DAG & Commit Serialization**](docs/05_dag_and_commit_serialization.md) | **4** | **Deep dive: DAG mathematics, commit serialization pipeline, content deduplication** |
+
+---
+
 ## 🗺️ Roadmap
 
 | Phase | Feature | Status |
@@ -191,7 +205,39 @@ src/
 ├── commit.rs        # Commit creation, signature serialization, DAG parent linking
 ├── store.rs         # Object database read/write abstraction
 └── refs.rs          # (Next) HEAD pointer, branch reference management
+
+### Mermaid Diagrams
+
+Throughout the documentation, Mermaid diagrams are used to visualize Git's internal structures and data flow. These diagrams are rendered natively by GitHub when viewing the markdown files.
+
 ```
+
+**Example — DAG Structure:**
+
+```mermaid
+graph TD
+    A["Commit A<br/>(Initial)"] --> B["Commit B"]
+    B --> C["Commit C"]
+    B --> D["Commit D"]
+    C --> E["Commit E<br/>(Merge)"]
+    D --> E
+```
+
+**Example — Commit Object Format:**
+
+```mermaid
+flowchart LR
+    Tree[Tree Hash] --> Headers[Key-Value Headers]
+    Parent[Parent Hash] --> Headers
+    Author[Author Info] --> Headers
+    Committer[Committer Info] --> Headers
+    Headers --> Blank[Blank Line]
+    Blank --> Message[Commit Message]
+    Message --> SHA[SHA-1 Hash + Zlib Compress]
+    SHA --> Store[.git/objects/]
+```
+
+---
 
 ---
 
@@ -209,6 +255,9 @@ This project is a deliberate exercise in systems programming:
 <div align="center">
 
 *Built following the [Build Git From Scratch in Rust](docs/build-git-in-rust.md) blueprint.*
+
+**Documentation:** [Phase 4 — Commit Objects & DAG](docs/04_commit_object_and_commit_tree.md) · [Phase 4 — DAG Deep Dive](docs/05_dag_and_commit_serialization.md)
+
 *This project is a learning vehicle for systems programming. Not intended for production use.*
 
 </div>

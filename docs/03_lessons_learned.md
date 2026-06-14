@@ -1,6 +1,8 @@
 # Lessons Learned: Phase 3
 
 > Concrete Rust and systems programming lessons from building `write-tree`. Each lesson is tied to a specific moment in the implementation, not stated in the abstract.
+>
+> **Phase 4 lessons:** See [04_commit_object_and_commit_tree.md](04_commit_object_and_commit_tree.md) and [05_dag_and_commit_serialization.md](05_dag_and_commit_serialization.md) for takeaways from implementing commit objects and the DAG.
 
 ---
 

@@ -1,6 +1,11 @@
 # Git Internals: What Git Actually Is
 
-> This document covers the architecture and byte-level contracts that `write-tree` is built on. It is scoped to Phase 3 of the `git-rs` project. Phases 4–6 have their own additions to this model (commit objects, refs, the DAG in full).
+> This document covers the architecture and byte-level contracts that `write-tree` is built on. It is scoped to Phase 3 of the `git-rs` project.
+>
+> **For Phase 4 (commit objects, DAG, and parent references), see:**
+>
+> - [04_commit_object_and_commit_tree.md](04_commit_object_and_commit_tree.md) — Commit object format and DAG structure
+> - [05_dag_and_commit_serialization.md](05_dag_and_commit_serialization.md) — DAG mathematics and commit serialization
 
 ---
 
@@ -255,3 +260,14 @@ $ git cat-file -p 4d69c9857fa055de1b36ee9372f2b2bb92c844d5
 ```
 
 The root tree object correctly identifies `folder1` as a tree with its own hash, and `sample.txt` as a blob. The alphabetical ordering (`folder1` before `sample.txt`, since `'f'` = 102 < `'s'` = 115) is exact. Official Git read it without modification.
+
+---
+
+## 7. Transition to Commit Objects (Phase 4)
+
+Tree objects represent directory snapshots, but they have no concept of *time*, *authorship*, or *history*. To create a versioned history, Git introduces **commit objects** — text-based objects that reference a tree (the snapshot), include author/committer metadata, and link to previous commits via parent references.
+
+The transition from trees to commits is the transition from a *spatial* snapshot to a *temporal* history. See the Phase 4 documentation for the full treatment:
+
+- [04_commit_object_and_commit_tree.md](04_commit_object_and_commit_tree.md) — Commit object format and DAG structure
+- [05_dag_and_commit_serialization.md](05_dag_and_commit_serialization.md) — DAG mathematics and commit serialization
