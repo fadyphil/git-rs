@@ -1,6 +1,11 @@
 # Engineering Journal: Building `write-tree`
 
 > A record of how Phase 3 was built — the specific decisions made, the specific bugs introduced, and the reasoning that resolved them. Documented for portfolio and future reference.
+>
+> **For Phase 4 (commit objects and DAG), see:**
+>
+> - [04_commit_object_and_commit_tree.md](04_commit_object_and_commit_tree.md)
+> - [05_dag_and_commit_serialization.md](05_dag_and_commit_serialization.md)
 
 ---
 

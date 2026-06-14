@@ -20,6 +20,11 @@
 - [Appendix B — Verification Tests Per Phase](#appendix-b---verification-tests-per-phase)
 - [The North Star](#the-north-star)
 
+**Phase 4 Supplementary Documentation:**
+
+- **For commit objects, DAG structure, and commit serialization:** [04_commit_object_and_commit_tree.md](04_commit_object_and_commit_tree.md) — Commit object format, parent references, and Mermaid diagrams
+- **For DAG mathematics and deep dive:** [05_dag_and_commit_serialization.md](05_dag_and_commit_serialization.md) — DAG properties, commit serialization pipeline, and verification
+
 ---
 
 # Part 0 - Before You Begin
