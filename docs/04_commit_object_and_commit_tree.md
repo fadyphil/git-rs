@@ -66,10 +66,10 @@ Git stores project history as a **Directed Acyclic Graph (DAG)** — a mathemati
 
 ```mermaid
 graph TD
-    A[Commit A<br/>(Initial)<br/>tree: abc123<br/>parent: none] --> B[Commit B<br/>tree: def456<br/>parent: A]
-    B --> C[Commit C<br/>tree: ghi789<br/>parent: B]
-    B --> D[Commit D<br/>tree: jkl012<br/>parent: B]
-    C --> E[Commit E<br/>tree: mno345<br/>parents: C, D<br/>Merge Commit]
+    A["Commit A<br/>(Initial)<br/>tree: abc123<br/>parent: none"] --> B["Commit B<br/>tree: def456<br/>parent: A"]
+    B --> C["Commit C<br/>tree: ghi789<br/>parent: B"]
+    B --> D["Commit D<br/>tree: jkl012<br/>parent: B"]
+    C --> E["Commit E<br/>tree: mno345<br/>parents: C, D<br/>Merge Commit"]
     D --> E
 ```
 
@@ -287,19 +287,20 @@ This diagram shows how commit objects fit into the complete Git object model aft
 ```mermaid
 graph TB
     subgraph "Commit Layer"
-        C1[Commit 1<br/>abc123<br/>parent: none<br/>message: "Initial"]
-        C2[Commit 2<br/>def456<br/>parent: C1<br/>message: "Add feature"]
+        C1["Commit 1<br/>abc123<br/>parent: none<br/>message: 'Initial'"]
+        C2["Commit 2<br/>def456<br/>parent: C1<br/>message: 'Add feature'"]
     end
     
     subgraph "Tree Layer"
-        T1[Tree 1<br/>tree-abc<br/>src: blob1<br/>README: blob2]
-        T2[Tree 2<br/>tree-def<br/>src: blob3<br/>README: blob2<br/>tests: tree-sub]
+        T1["Tree 1<br/>tree-abc<br/>src: blob1<br/>README: blob2"]
+        T2["Tree 2<br/>tree-def<br/>src: blob3<br/>README: blob2<br/>tests: tree-sub"]
+        T3["Tree 3<br/>test.rs: blob-ddd"]
     end
     
     subgraph "Blob Layer"
-        B1[Blob<br/>src/main.rs<br/>blob-aaa]
-        B2[Blob<br/>README.md<br/>blob-bbb]
-        B3[Blob<br/>src/lib.rs<br/>blob-ccc]
+        B1["Blob<br/>src/main.rs<br/>blob-aaa"]
+        B2["Blob<br/>README.md<br/>blob-bbb"]
+        B3["Blob<br/>src/lib.rs<br/>blob-ccc"]
     end
     
     C1 -.->|references| T1
@@ -310,7 +311,7 @@ graph TB
     T1 -.->|README| B2
     T2 -.->|src| B3
     T2 -.->|README| B2
-    T2 -.->|tests| T3[Tree 3<br/>test.rs: blob-ddd]
+    T2 -.->|tests| T3
 ```
 
 **Key observations from this diagram:**
