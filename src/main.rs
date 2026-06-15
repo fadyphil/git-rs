@@ -1,5 +1,6 @@
 mod commit;
 mod object;
+mod refs;
 mod tree;
 
 use std::env;
@@ -9,6 +10,9 @@ use std::path::Path;
 use crate::commit::write_commit_object;
 use crate::object::read_object;
 use crate::object::write_object;
+use crate::refs::read_head;
+use crate::refs::read_ref;
+use crate::refs::update_current_ref;
 use crate::tree::write_tree;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -60,6 +64,13 @@ fn run(args: &Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
             expect_args(args, 5, "git-rs commit-tree <tree-hash> -m <message>");
             let commit_hash = cmd_write_commit(args[2].clone(), args[4].clone(), None, &args[3])?;
             println!("{}", commit_hash);
+            Ok(())
+        }
+        "commit" => {
+            expect_args(args, 4, "git-rs commit -m <message>");
+            let new_commit_hash = cmd_commit(args[3].clone())?;
+            let _update_refs = update_current_ref(&new_commit_hash)?;
+            println!("{}", new_commit_hash);
             Ok(())
         }
         unknown => {
@@ -145,4 +156,14 @@ fn cmd_write_commit(
             std::process::exit(1);
         }
     }
+}
+
+fn cmd_commit(commit_message: String) -> Result<String, Box<dyn std::error::Error>> {
+    let current_path = Path::new(".");
+    let tree_hash = write_tree(current_path)?;
+    let path = read_head()?;
+    let ref_content = read_ref(path)?;
+
+    let commit_hash = write_commit_object(tree_hash, commit_message, ref_content)?;
+    Ok(commit_hash)
 }

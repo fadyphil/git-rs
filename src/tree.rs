@@ -37,8 +37,6 @@ pub fn write_tree(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
                 name: entry.file_name().to_string_lossy().into_owned(),
                 hash: object?,
             });
-
-            println!("{:?}", entry.path());
         } else if entry.path().is_dir() {
             let hashed_object = write_tree(&entry.path())?;
             array_of_entries.push(TreeEntry {

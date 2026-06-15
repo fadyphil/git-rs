@@ -48,6 +48,7 @@ By building Git's content-addressable storage, SHA-1 hashing, Zlib compression, 
 | `cat-file <-p\|-t\|-s> <hash>` | Locates, decompresses, parses, and displays stored objects. | Binary parsing, Null-byte delimiters, UTF-8 coercion |
 | `write-tree` | Snapshots the current directory into a binary tree object. | **Post-order DFS recursion**, Binary serialization, Raw 20-byte hashing |
 | `commit-tree <tree-hash> -m <message>` | Creates a commit object with author/committer signatures and parent references. | **Commit object format**, Signature serialization, DAG parent linking |
+| `commit -m <message>` | Porcelain commit: resolve `HEAD`, snapshot working directory into a tree, create a commit with correct parent, and update the current ref. | **Plumbing vs porcelain**, Refs (`HEAD`/`refs/heads/*`), Branch tip mutation |
 
 ---
 
@@ -179,6 +180,7 @@ If official Git can read the database, the binary format is mathematically corre
 | [Architecture Documentation](docs/phase-3-docs/Git_RS_Architecture_Documentation.md) | 3 | Visual guides to the Git object model, DAG, and write-tree algorithm |
 | [**Commit Objects & the DAG**](docs/04_commit_object_and_commit_tree.md) | **4** | **Commit object format, DAG structure, parent references, and serialization** |
 | [**DAG & Commit Serialization**](docs/05_dag_and_commit_serialization.md) | **4** | **Deep dive: DAG mathematics, commit serialization pipeline, content deduplication** |
+| [**Porcelain Commit & Refs**](docs/06_porcelain_commit_and_refs.md) | **5** | **`commit` workflow, `HEAD` resolution, branch pointer mutation, plumbing vs porcelain** |
 
 ---
 
@@ -190,7 +192,7 @@ If official Git can read the database, the binary format is mathematically corre
 | **2** | `hash-object`, `cat-file` & object storage | ✅ **Complete** |
 | **3** | `write-tree` & binary serialization | ✅ **Complete** |
 | **4** | `commit-tree` & DAG parent references | ✅ **Complete** |
-| **5** | `commit` workflow & `refs/HEAD` management | 🔲 **In Progress** |
+| **5** | `commit` workflow & `refs/HEAD` management | ✅ **Complete** |
 | **6** | `export-snapshot` & LLM Wiki integration | 🔲 Planned |
 
 ---
@@ -204,7 +206,7 @@ src/
 ├── tree.rs          # Recursive directory walking, binary tree serialization
 ├── commit.rs        # Commit creation, signature serialization, DAG parent linking
 ├── store.rs         # Object database read/write abstraction
-└── refs.rs          # (Next) HEAD pointer, branch reference management
+└── refs.rs          # HEAD pointer, branch reference read/write
 
 ### Mermaid Diagrams
 
@@ -256,7 +258,7 @@ This project is a deliberate exercise in systems programming:
 
 *Built following the [Build Git From Scratch in Rust](docs/build-git-in-rust.md) blueprint.*
 
-**Documentation:** [Phase 4 — Commit Objects & DAG](docs/04_commit_object_and_commit_tree.md) · [Phase 4 — DAG Deep Dive](docs/05_dag_and_commit_serialization.md)
+**Documentation:** [Phase 4 — Commit Objects & DAG](docs/04_commit_object_and_commit_tree.md) · [Phase 4 — DAG Deep Dive](docs/05_dag_and_commit_serialization.md) · [Phase 5 — Porcelain Commit & Refs](docs/06_porcelain_commit_and_refs.md)
 
 *This project is a learning vehicle for systems programming. Not intended for production use.*
 
