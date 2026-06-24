@@ -6,26 +6,26 @@ use std::{
     path::PathBuf,
 };
 
-fn create_object(kind: &str, content: &[u8]) -> Vec<u8> {
+fn create_object(kind: &str, content: &[u8]) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     //here we create the vector that will hold the object which we will return
     let mut obj = Vec::new();
     //here is the way to append to the vector some ascii encoded bytes
     write!(&mut obj, "{} {}\0", kind, content.len())?;
     obj.extend_from_slice(content);
-    obj
+    Ok(obj)
 }
 
-fn hash_object(object: &Vec<u8>) -> String {
+fn hash_object(object: &[u8]) -> String {
     let mut hasher = Sha1::new();
-    hasher.update(&object);
+    hasher.update(object);
     let hash = hasher.finalize();
     let hash_hex: String = hash.iter().map(|b| format!("{:02x}", b)).collect();
     hash_hex
 }
 
-fn compress_object(object: &Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+fn compress_object(object: &[u8]) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let mut compressor = ZlibEncoder::new(Vec::new(), Compression::default());
-    compressor.write_all(&object)?;
+    compressor.write_all(object)?;
     let compressed = compressor.finish();
     Ok(compressed?)
 }
@@ -35,7 +35,7 @@ pub fn read_object(hash: &str) -> Result<(String, Vec<u8>), Box<dyn std::error::
     let path = object_path(hash);
 
     // 2. Read the compressed bytes from disk
-    let compressed = fs::read(&path)?;
+    let compressed = fs::read(&path?)?;
 
     // 3. Decompress into a buffer
     let mut decoder = ZlibDecoder::new(&compressed[..]);
@@ -77,7 +77,7 @@ fn object_path(hash: &str) -> Result<PathBuf, Box<dyn std::error::Error>> {
 }
 
 pub fn write_object(kind: &str, content: &[u8]) -> Result<String, Box<dyn std::error::Error>> {
-    let object = create_object(kind, content);
+    let object = create_object(kind, content)?;
     let hashed_object = hash_object(&object);
     let compressed_object = compress_object(&object)?;
     let path = object_path(&hashed_object)?;
