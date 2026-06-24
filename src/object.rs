@@ -5,8 +5,42 @@ use std::{
     io::{Read, Write},
     path::PathBuf,
 };
+use thiserror::Error;
 
-fn create_object(kind: &str, content: &[u8]) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+#[derive(Debug, Error)]
+pub enum ObjectError {
+    // --- STANDARD LIBRARY ERRORS (Using #[from]) ---
+    #[error("I/O error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("UTF-8 parsing error: {0}")]
+    Utf8(#[from] std::str::Utf8Error),
+
+    #[error("Integer parsing error: {0}")]
+    ParseInt(#[from] std::num::ParseIntError),
+
+    // --- CUSTOM DOMAIN LOGIC ERRORS ---
+    #[error("Corrupt object: missing null separator")]
+    MissingNullSeparator,
+
+    #[error("Corrupt object: missing object type")]
+    MissingObjectType,
+
+    #[error("Corrupt object: missing size declaration")]
+    MissingSizeDeclaration,
+
+    // Notice how we can hold data inside the variant!
+    #[error("Corrupt object: header size mismatch (expected {expected}, got {actual})")]
+    SizeMismatch { expected: usize, actual: usize },
+
+    #[error("Invalid hash length: must be at least 40 characters")]
+    InvalidHashLength,
+
+    #[error("Invalid object path: no parent directory found")]
+    InvalidObjectPath,
+}
+
+fn create_object(kind: &str, content: &[u8]) -> Result<Vec<u8>, ObjectError> {
     //here we create the vector that will hold the object which we will return
     let mut obj = Vec::new();
     //here is the way to append to the vector some ascii encoded bytes
@@ -23,19 +57,19 @@ fn hash_object(object: &[u8]) -> String {
     hash_hex
 }
 
-fn compress_object(object: &[u8]) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+fn compress_object(object: &[u8]) -> Result<Vec<u8>, ObjectError> {
     let mut compressor = ZlibEncoder::new(Vec::new(), Compression::default());
     compressor.write_all(object)?;
     let compressed = compressor.finish();
     Ok(compressed?)
 }
 
-pub fn read_object(hash: &str) -> Result<(String, Vec<u8>), Box<dyn std::error::Error>> {
+pub fn read_object(hash: &str) -> Result<(String, Vec<u8>), ObjectError> {
     // 1. Resolve the filesystem path for this hash
-    let path = object_path(hash);
+    let path = object_path(hash)?;
 
     // 2. Read the compressed bytes from disk
-    let compressed = fs::read(&path?)?;
+    let compressed = fs::read(&path)?;
 
     // 3. Decompress into a buffer
     let mut decoder = ZlibDecoder::new(&compressed[..]);
@@ -46,7 +80,7 @@ pub fn read_object(hash: &str) -> Result<(String, Vec<u8>), Box<dyn std::error::
     let null_pos = decompressed
         .iter()
         .position(|&b| b == 0)
-        .ok_or("Corrupt object: missing null separator")?;
+        .ok_or(ObjectError::MissingNullSeparator)?;
 
     // 5. Split header and content using byte indices
     let header = std::str::from_utf8(&decompressed[..null_pos])?;
@@ -54,34 +88,37 @@ pub fn read_object(hash: &str) -> Result<(String, Vec<u8>), Box<dyn std::error::
 
     // 6. Parse the header: "<kind> <size>"
     let mut parts = header.splitn(2, ' ');
-    let kind = parts.next().ok_or("Corrupt object: missing object type")?;
+    let kind = parts.next().ok_or(ObjectError::MissingObjectType)?;
     let declared_size: usize = parts
         .next()
-        .ok_or("Corrupt object: missing size declaration")?
+        .ok_or(ObjectError::MissingSizeDeclaration)?
         .parse()?;
 
     // 7. Verify declared size matches actual content length (blueprint requirement)
     if declared_size != content.len() {
-        return Err("Corrupt object: header size mismatch".into());
+        return Err(ObjectError::SizeMismatch {
+            expected: declared_size,
+            actual: content.len(),
+        });
     }
 
     Ok((kind.to_string(), content))
 }
 
-fn object_path(hash: &str) -> Result<PathBuf, Box<dyn std::error::Error>> {
+fn object_path(hash: &str) -> Result<PathBuf, ObjectError> {
     let base = ".git/objects/";
-    let file_name = hash.get(2..).ok_or("Invalid hash length")?;
-    let dir = hash.get(..2).ok_or("Invalid hash length")?;
+    let file_name = hash.get(2..).ok_or(ObjectError::InvalidHashLength)?;
+    let dir = hash.get(..2).ok_or(ObjectError::InvalidHashLength)?;
     let path = PathBuf::from(base).join(dir).join(file_name);
     Ok(path)
 }
 
-pub fn write_object(kind: &str, content: &[u8]) -> Result<String, Box<dyn std::error::Error>> {
+pub fn write_object(kind: &str, content: &[u8]) -> Result<String, ObjectError> {
     let object = create_object(kind, content)?;
     let hashed_object = hash_object(&object);
     let compressed_object = compress_object(&object)?;
     let path = object_path(&hashed_object)?;
-    fs::create_dir_all(path.parent().ok_or("Invalid object path")?)?;
+    fs::create_dir_all(path.parent().ok_or(ObjectError::InvalidObjectPath)?)?;
     fs::write(path, compressed_object)?;
     Ok(hashed_object)
 }

@@ -3,6 +3,19 @@ use std::{
     io::Write,
     time::{SystemTime, UNIX_EPOCH},
 };
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum CommitError {
+    #[error("I/O error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("System time error: {0}")]
+    SystemTime(#[from] std::time::SystemTimeError),
+
+    #[error("Object storage error: {0}")]
+    Object(#[from] crate::object::ObjectError),
+}
 pub struct Signature {
     name: String,
     email: String,
@@ -18,7 +31,7 @@ pub struct Commit {
     parent: Option<String>,
 }
 
-fn get_timestamp() -> Result<u64, Box<dyn std::error::Error>> {
+fn get_timestamp() -> Result<u64, CommitError> {
     let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
     Ok(timestamp)
 }
@@ -27,7 +40,7 @@ fn create_commit(
     tree_hash: &str,
     commit_message: &str,
     parent_hash: Option<&str>,
-) -> Result<Commit, Box<dyn std::error::Error>> {
+) -> Result<Commit, CommitError> {
     let time_stamp = get_timestamp()?;
     let (name, email) = get_author();
 
@@ -53,7 +66,7 @@ fn create_commit(
     Ok(commit)
 }
 
-fn write_commit(commit: &Commit) -> Result<String, Box<dyn std::error::Error>> {
+fn write_commit(commit: &Commit) -> Result<String, CommitError> {
     let mut serialized = Vec::new();
     writeln!(&mut serialized, "tree {}", commit.tree)?;
     if let Some(parent_hash) = &commit.parent {
@@ -81,7 +94,7 @@ pub fn write_commit_object(
     tree_hash: &str,
     commit_message: &str,
     parent_hash: Option<&str>,
-) -> Result<String, Box<dyn std::error::Error>> {
+) -> Result<String, CommitError> {
     let commit = create_commit(tree_hash, commit_message, parent_hash)?;
     let commit_hash = write_commit(&commit)?;
     Ok(commit_hash)
