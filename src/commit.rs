@@ -38,15 +38,15 @@ fn create_commit(
         timezone: "+0000".to_string(),
     };
     let committer = Signature {
-        name: name,
-        email: email,
+        name,
+        email,
         timestamp: author.timestamp,
         timezone: author.timezone.clone(),
     };
     let commit = Commit {
         tree: tree_hash.to_owned(),
-        author: author,
-        committer: committer,
+        author,
+        committer,
         message: commit_message.to_owned(),
         parent: parent_hash.map(|s| s.to_owned()),
     };
@@ -55,18 +55,18 @@ fn create_commit(
 
 fn write_commit(commit: &Commit) -> Result<String, Box<dyn std::error::Error>> {
     let mut serialized = Vec::new();
-    write!(&mut serialized, "tree {}\n", commit.tree)?;
+    writeln!(&mut serialized, "tree {}", commit.tree)?;
     if let Some(parent_hash) = &commit.parent {
-        write!(&mut serialized, "parent {}\n", parent_hash)?;
+        writeln!(&mut serialized, "parent {}", parent_hash)?;
     }
-    write!(
+    writeln!(
         &mut serialized,
-        "author {} <{}> {} {}\n",
+        "author {} <{}> {} {}",
         commit.author.name, commit.author.email, commit.author.timestamp, commit.author.timezone
     )?;
-    write!(
+    writeln!(
         &mut serialized,
-        "committer {} <{}> {} {}\n",
+        "committer {} <{}> {} {}",
         commit.committer.name,
         commit.committer.email,
         commit.committer.timestamp,

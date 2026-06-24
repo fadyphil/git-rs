@@ -46,5 +46,5 @@ pub fn write_tree(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
         )?;
         formatted_tree_entries.extend_from_slice(&hex::decode(&entry.hash)?);
     }
-    Ok(write_object("tree", &formatted_tree_entries)?)
+    write_object("tree", &formatted_tree_entries)
 }

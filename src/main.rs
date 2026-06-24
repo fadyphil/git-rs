@@ -52,7 +52,7 @@ fn run(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
         "write-tree" => {
             expect_args(args, 2, "git-rs write-tree");
             let current_path = Path::new(".");
-            let tree_hash = cmd_write_tree(&current_path)?;
+            let tree_hash = cmd_write_tree(current_path)?;
             println!("{}", tree_hash);
             Ok(())
         }
@@ -70,7 +70,7 @@ fn run(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
         "commit" => {
             expect_args(args, 4, "git-rs commit -m <message>");
             let new_commit_hash = cmd_commit(&args[3])?;
-            let _update_refs = update_current_ref(&new_commit_hash)?;
+            update_current_ref(&new_commit_hash)?;
             println!("{}", new_commit_hash);
             Ok(())
         }
@@ -169,6 +169,6 @@ fn cmd_commit(commit_message: &str) -> Result<String, Box<dyn std::error::Error>
     let path = read_head()?;
     let ref_content = read_ref(&path)?;
 
-    let commit_hash = write_commit_object(&tree_hash, &commit_message, ref_content.as_deref())?;
+    let commit_hash = write_commit_object(&tree_hash, commit_message, ref_content.as_deref())?;
     Ok(commit_hash)
 }

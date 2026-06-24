@@ -1,4 +1,4 @@
-use flate2::{Compression, read::ZlibDecoder, write::ZlibEncoder};
+use flate2::{read::ZlibDecoder, write::ZlibEncoder, Compression};
 use sha1::{Digest, Sha1};
 use std::{
     fs,
@@ -81,7 +81,7 @@ pub fn write_object(kind: &str, content: &[u8]) -> Result<String, Box<dyn std::e
     let hashed_object = hash_object(&object);
     let compressed_object = compress_object(&object)?;
     let path = object_path(&hashed_object)?;
-    fs::create_dir_all(&path.parent().ok_or("Invalid object path")?)?;
-    fs::write(&path, compressed_object)?;
+    fs::create_dir_all(path.parent().ok_or("Invalid object path")?)?;
+    fs::write(path, compressed_object)?;
     Ok(hashed_object)
 }
