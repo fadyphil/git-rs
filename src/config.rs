@@ -11,7 +11,7 @@ pub struct UserConfig {
 pub fn get_author() -> (String, String) {
     let unknown_user = UserConfig {
         name: "unknown_user".to_string(),
-        email: "unknow@localhost".to_string(),
+        email: "unknown@localhost".to_string(),
     };
 
     let contents = std::fs::read_to_string(".git/config").unwrap_or_default();
