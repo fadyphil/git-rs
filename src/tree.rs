@@ -1,4 +1,4 @@
-use std::{fs, path::Path};
+use std::{fs, io::Write, path::Path};
 
 use crate::object::write_object;
 
@@ -6,16 +6,6 @@ pub struct TreeEntry {
     pub mode: String,
     pub name: String,
     pub hash: String,
-}
-
-pub fn hex_to_bytes(hex_content: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-    if hex_content.len() != 40 {
-        return Err("Error hex must be exactly 40 chars long".into());
-    }
-    (0..hex_content.len())
-        .step_by(2)
-        .map(|i| u8::from_str_radix(&hex_content[i..i + 2], 16).map_err(|e| e.into()))
-        .collect()
 }
 
 pub fn write_tree(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
@@ -31,11 +21,11 @@ pub fn write_tree(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
 
         if entry.path().is_file() {
             let content = fs::read(entry.path())?;
-            let object = write_object("blob", &content);
+            let object = write_object("blob", &content)?;
             array_of_entries.push(TreeEntry {
                 mode: "100644".to_string(),
                 name: entry.file_name().to_string_lossy().into_owned(),
-                hash: object?,
+                hash: object,
             });
         } else if entry.path().is_dir() {
             let hashed_object = write_tree(&entry.path())?;
@@ -46,14 +36,15 @@ pub fn write_tree(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
             });
         }
     }
-    array_of_entries.sort_by_key(|k| k.name.clone());
+    array_of_entries.sort_unstable_by(|a, b| a.name.cmp(&b.name));
     let mut formatted_tree_entries: Vec<u8> = Vec::new();
     for entry in array_of_entries {
-        formatted_tree_entries.extend_from_slice(entry.mode.as_bytes());
-        formatted_tree_entries.extend_from_slice(" ".as_bytes());
-        formatted_tree_entries.extend_from_slice(entry.name.as_bytes());
-        formatted_tree_entries.push(0x00); // Null terminator
-        formatted_tree_entries.extend_from_slice(&hex_to_bytes(&entry.hash)?);
+        write!(
+            &mut formatted_tree_entries,
+            "{} {}\0",
+            entry.mode, entry.name
+        )?;
+        formatted_tree_entries.extend_from_slice(&hex::decode(&entry.hash)?);
     }
-    Ok(write_object("tree", &formatted_tree_entries)?)
+    write_object("tree", &formatted_tree_entries)
 }

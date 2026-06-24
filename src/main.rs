@@ -1,4 +1,5 @@
 mod commit;
+mod config;
 mod object;
 mod refs;
 mod tree;
@@ -36,7 +37,7 @@ fn expect_args(args: &[String], expected: usize, usage: &str) {
     }
 }
 
-fn run(args: &Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+fn run(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
     match args[1].as_str() {
         "init" => {
             expect_args(args, 2, "Usage git-rs init");
@@ -51,7 +52,7 @@ fn run(args: &Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
         "write-tree" => {
             expect_args(args, 2, "git-rs write-tree");
             let current_path = Path::new(".");
-            let tree_hash = cmd_write_tree(&current_path)?;
+            let tree_hash = cmd_write_tree(current_path)?;
             println!("{}", tree_hash);
             Ok(())
         }
@@ -62,14 +63,14 @@ fn run(args: &Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
         }
         "commit-tree" => {
             expect_args(args, 5, "git-rs commit-tree <tree-hash> -m <message>");
-            let commit_hash = cmd_write_commit(args[2].clone(), args[4].clone(), None, &args[3])?;
+            let commit_hash = cmd_write_commit(&args[2], &args[4], None, &args[3])?;
             println!("{}", commit_hash);
             Ok(())
         }
         "commit" => {
             expect_args(args, 4, "git-rs commit -m <message>");
-            let new_commit_hash = cmd_commit(args[3].clone())?;
-            let _update_refs = update_current_ref(&new_commit_hash)?;
+            let new_commit_hash = cmd_commit(&args[3])?;
+            update_current_ref(&new_commit_hash)?;
             println!("{}", new_commit_hash);
             Ok(())
         }
@@ -86,6 +87,12 @@ fn cmd_init() -> Result<(), Box<dyn std::error::Error>> {
     fs::create_dir_all(".git/refs/heads/")?;
     fs::create_dir_all(".git/refs/tags/")?;
     fs::write(".git/HEAD", "ref: refs/heads/main\n")?;
+    if !Path::new(".git/config").exists() {
+        fs::write(
+            ".git/config",
+            "[user]\nname = \"Your Name\"\nemail = \"you@example.com\"\n",
+        )?;
+    }
     Ok(())
 }
 
@@ -138,9 +145,9 @@ fn cmd_write_tree(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
 }
 
 fn cmd_write_commit(
-    tree_hash: String,
-    commit_message: String,
-    parent_hash: Option<String>,
+    tree_hash: &str,
+    commit_message: &str,
+    parent_hash: Option<&str>,
     flag: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
     match flag {
@@ -150,7 +157,7 @@ fn cmd_write_commit(
         }
         unkown => {
             eprintln!(
-                "unknown flag  : {}\n Usage git-rs commit <tree-hash> -m <message>",
+                "unknown flag : {}\n Usage git-rs commit <tree-hash> -m <message>",
                 unkown
             );
             std::process::exit(1);
@@ -158,12 +165,12 @@ fn cmd_write_commit(
     }
 }
 
-fn cmd_commit(commit_message: String) -> Result<String, Box<dyn std::error::Error>> {
+fn cmd_commit(commit_message: &str) -> Result<String, Box<dyn std::error::Error>> {
     let current_path = Path::new(".");
     let tree_hash = write_tree(current_path)?;
     let path = read_head()?;
-    let ref_content = read_ref(path)?;
+    let ref_content = read_ref(&path)?;
 
-    let commit_hash = write_commit_object(tree_hash, commit_message, ref_content)?;
+    let commit_hash = write_commit_object(&tree_hash, commit_message, ref_content.as_deref())?;
     Ok(commit_hash)
 }
