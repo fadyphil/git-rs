@@ -43,7 +43,7 @@ By building Git's content-addressable storage, SHA-1 hashing, Zlib compression, 
 
 | Command | Description | Engineering Concepts Mastered |
 | :--- | :--- | :--- |
-| `init` | Creates the `.git/` directory skeleton and `HEAD` pointer. | Filesystem I/O, Path resolution |
+| `init` | Creates the `.git/` directory skeleton and `HEAD` pointer, and repo-local `.git/config` file | Filesystem I/O, Path resolution |
 | `hash-object -w <file>` | Reads a file, constructs the Git blob format, computes SHA-1, compresses with Zlib, and stores it. | Byte buffers (`Vec<u8>`), Cryptographic hashing, Zlib streams |
 | `cat-file <-p\|-t\|-s> <hash>` | Locates, decompresses, parses, and displays stored objects. | Binary parsing, Null-byte delimiters, UTF-8 coercion |
 | `write-tree` | Snapshots the current directory into a binary tree object. | **Post-order DFS recursion**, Binary serialization, Raw 20-byte hashing |
@@ -93,9 +93,24 @@ Commit objects use a human-readable ASCII format with key-value headers:
 ### Core Systems Concepts
 
 * **Content-Addressable Storage:** Every object is stored as `.git/objects/XX/YYY...` where `XX` is the first 2 hex chars of the SHA-1 hash. Deduplication is achieved by mathematical certainty, not heuristics.
+
 * **Post-Order DAG Traversal:** Because a parent directory's hash is mathematically derived from its children, `write-tree` utilizes recursive post-order Depth-First Search to bubble hashes up the call stack.
+
 * **Strict Format Compliance:** Objects are stored exactly as official Git expects: `"<type> <size>\0<content>"`, Zlib-compressed, and hashed *before* compression.
-* **Rust-Native Memory Model:** Explicit ownership, `&[u8]` slice borrowing, `Result`-based error propagation, and `Box<dyn Error>` for unified failure handling. No garbage collection, no hidden allocations.
+
+* **Rust-Native Memory Model:**
+
+  * Explicit ownership.
+
+  * `&[u8]` slice borrowing.
+  
+  * `Result`-based error propagation
+  
+  * `Box<dyn Error>` for unified failure handling.
+  
+  * No garbage collection, no hidden allocations.
+
+  * `write!`:Zero-allocation byte formatting using the write! macro directly into `Vec<u8>` buffers.
 
 ---
 
@@ -108,6 +123,8 @@ To enforce a deep understanding of the standard library, external dependencies a
 sha1 = "0.10"    # Cryptographic hashing
 flate2 = "1.0"   # Zlib compression/decompression
 hex = "0.4"      # Hex encoding utilities
+serde  = {version = "1.0", features = ["derive"]}
+toml = "1.1.2+spec-1.1.0"
 ```
 
 ---
@@ -172,7 +189,7 @@ If official Git can read the database, the binary format is mathematically corre
 ## 📚 Documentation
 
 | Document | Phase | Description |
-|----------|-------|-------------|
+| ---------- | ------- | ------------- |
 | [Git Internals](docs/01_git_internals.md) | 1–3 | Content-addressable storage, blob/tree objects, binary serialization |
 | [Engineering Journal](docs/02_engineering_journal.md) | 1–3 | Development log: decisions, trade-offs, and lessons learned |
 | [Lessons Learned](docs/03_lessons_learned.md) | 1–3 | Key takeaways from implementing Git's object model |
