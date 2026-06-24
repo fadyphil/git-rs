@@ -48,34 +48,26 @@ fn create_commit(
     Ok(commit)
 }
 
-fn write_commit(commit: Commit) -> Result<String, Box<dyn std::error::Error>> {
-    let mut serialized: Vec<u8> = Vec::new();
-    serialized.extend_from_slice(format!("tree {}\n", commit.tree).as_bytes());
+fn write_commit(commit: &Commit) -> Result<String, Box<dyn std::error::Error>> {
+    let mut serialized = Vec::new();
+    write!(&mut serialized, "tree {}\n", commit.tree)?;
     if let Some(parent_hash) = &commit.parent {
-        serialized.extend_from_slice(format!("parent {}\n", parent_hash).as_bytes());
+        write!(&mut serialized, "parent {}\n", parent_hash)?;
     }
-
-    serialized.extend_from_slice(
-        format!(
+    write!(
+        &mut serialized,
             "author {} <{}> {} {}\n",
-            commit.author.name,
-            commit.author.email,
-            commit.author.timestamp,
-            commit.author.timezone
-        )
-        .as_bytes(),
-    );
-    serialized.extend_from_slice(
-        format!(
+        commit.author.name, commit.author.email, commit.author.timestamp, commit.author.timezone
+    )?;
+    write!(
+        &mut serialized,
             "committer {} <{}> {} {}\n",
             commit.committer.name,
             commit.committer.email,
             commit.committer.timestamp,
             commit.committer.timezone
-        )
-        .as_bytes(),
-    );
-    serialized.extend_from_slice(format!("\n{}\n", commit.message).as_bytes());
+    )?;
+    write!(&mut serialized, "\n{}\n", commit.message)?;
     let oid = write_object("commit", &serialized)?;
     Ok(oid)
 }

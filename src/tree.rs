@@ -49,11 +49,12 @@ pub fn write_tree(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
     array_of_entries.sort_by_key(|k| k.name.clone());
     let mut formatted_tree_entries: Vec<u8> = Vec::new();
     for entry in array_of_entries {
-        formatted_tree_entries.extend_from_slice(entry.mode.as_bytes());
-        formatted_tree_entries.extend_from_slice(" ".as_bytes());
-        formatted_tree_entries.extend_from_slice(entry.name.as_bytes());
-        formatted_tree_entries.push(0x00); // Null terminator
-        formatted_tree_entries.extend_from_slice(&hex_to_bytes(&entry.hash)?);
+        write!(
+            &mut formatted_tree_entries,
+            "{} {}\0",
+            entry.mode, entry.name
+        )?;
+        formatted_tree_entries.extend_from_slice(&hex::decode(&entry.hash)?);
     }
     Ok(write_object("tree", &formatted_tree_entries)?)
 }

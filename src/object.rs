@@ -10,12 +10,7 @@ fn create_object(kind: &str, content: &[u8]) -> Vec<u8> {
     //here we create the vector that will hold the object which we will return
     let mut obj = Vec::new();
     //here is the way to append to the vector some ascii encoded bytes
-    let size_str = content.len().to_string();
-
-    obj.extend_from_slice(kind.as_bytes());
-    obj.extend_from_slice(b" ");
-    obj.extend_from_slice(size_str.as_bytes());
-    obj.push(b'\0');
+    write!(&mut obj, "{} {}\0", kind, content.len())?;
     obj.extend_from_slice(content);
     obj
 }
