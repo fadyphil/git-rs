@@ -68,20 +68,20 @@ pub fn read_object(hash: &str) -> Result<(String, Vec<u8>), Box<dyn std::error::
     Ok((kind.to_string(), content))
 }
 
-fn object_path(hash: &str) -> PathBuf {
+fn object_path(hash: &str) -> Result<PathBuf, Box<dyn std::error::Error>> {
     let base = ".git/objects/";
-    let file_name = &hash[2..];
-    let dir = &hash[..2];
+    let file_name = hash.get(2..).ok_or("Invalid hash length")?;
+    let dir = hash.get(..2).ok_or("Invalid hash length")?;
     let path = PathBuf::from(base).join(dir).join(file_name);
-    path
+    Ok(path)
 }
 
 pub fn write_object(kind: &str, content: &[u8]) -> Result<String, Box<dyn std::error::Error>> {
     let object = create_object(kind, content);
     let hashed_object = hash_object(&object);
-    let compressed_object = compress_object(&object);
-    let path = object_path(&hashed_object);
-    fs::create_dir_all(&path.parent().unwrap())?;
-    fs::write(&path, compressed_object?)?;
+    let compressed_object = compress_object(&object)?;
+    let path = object_path(&hashed_object)?;
+    fs::create_dir_all(&path.parent().ok_or("Invalid object path")?)?;
+    fs::write(&path, compressed_object)?;
     Ok(hashed_object)
 }

@@ -3,14 +3,14 @@ use std::{fs, path::Path};
 
 pub fn read_head() -> Result<String, Box<dyn std::error::Error>> {
     let path = fs::read_to_string(".git/HEAD")?;
-    if !path.starts_with("ref: ") {
-        return Err("HEAD has hash instead of path,\nWARNING this is a DETACHED HEAD".into());
-    }
-    let clean_path = path.trim().strip_prefix("ref: ").unwrap();
+    let clean_path = path
+        .trim()
+        .strip_prefix("ref: ")
+        .ok_or("HEAD has hash instead of path,\nWARNING this is a DETACHED HEAD")?;
     Ok(clean_path.to_string())
 }
 
-pub fn read_ref(path: String) -> Result<Option<String>, Box<dyn std::error::Error>> {
+pub fn read_ref(path: &str) -> Result<Option<String>, Box<dyn std::error::Error>> {
     let path = PathBuf::from(".git/").join(path);
     if !path.exists() {
         return Ok(None);
