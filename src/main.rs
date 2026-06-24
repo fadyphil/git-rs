@@ -87,10 +87,12 @@ fn cmd_init() -> Result<(), Box<dyn std::error::Error>> {
     fs::create_dir_all(".git/refs/heads/")?;
     fs::create_dir_all(".git/refs/tags/")?;
     fs::write(".git/HEAD", "ref: refs/heads/main\n")?;
-    fs::write(
-        ".git/config",
-        "[user]\nname = \"Fady\"\nemail = \"fady@test.com\"\n",
-    )?;
+    if !Path::new(".git/config").exists() {
+        fs::write(
+            ".git/config",
+            "[user]\nname = \"Your Name\"\nemail = \"you@example.com\"\n",
+        )?;
+    }
     Ok(())
 }
 
