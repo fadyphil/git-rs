@@ -1,8 +1,16 @@
+//! # Git Tree Serialization
+//!
+//! This module handles the recursive traversal of directories and the creation
+//! of Git tree objects. Tree objects represent the state of a directory at a
+//! specific point in time, storing the names, modes, and SHA-1 hashes of its
+//! contents (files and subdirectories).
+
 use std::{fs, io::Write, path::Path};
 
 use crate::object::write_object;
 use thiserror::Error;
 
+/// Errors that can occur during tree serialization.
 #[derive(Debug, Error)]
 pub enum TreeError {
     #[error("I/O error: {0}")]
@@ -14,12 +22,22 @@ pub enum TreeError {
     #[error("Hex decoding error: {0}")]
     Hex(#[from] hex::FromHexError), // Wraps the hex crate error
 }
+
+/// Represents a single entry (file or directory) within a Git tree.
 pub struct TreeEntry {
+    /// The file mode (e.g., "100644" for files, "040000" for directories).
     pub mode: String,
+    /// The name of the file or directory.
     pub name: String,
+    /// The 40-character hex SHA-1 hash of the object.
     pub hash: String,
 }
 
+/// Recursively traverses a directory, hashes its contents, and writes tree objects to the database.
+///
+/// This function uses a post-order depth-first search approach, ensuring that child
+/// objects (blobs and sub-trees) are written and hashed before their parent tree.
+/// It returns the 40-character hex SHA-1 hash of the root tree object.
 pub fn write_tree(path: &Path, dir: &Path) -> Result<String, TreeError> {
     let entries = fs::read_dir(path)?;
     let mut array_of_entries: Vec<TreeEntry> = Vec::new();

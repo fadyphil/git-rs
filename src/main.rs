@@ -1,3 +1,12 @@
+//! # Git-rs CLI Dispatcher
+//!
+//! This module contains the main entry point for the `git-rs` command-line interface.
+//! It uses the `clap` crate to define, parse, and route CLI arguments to the appropriate
+//! plumbing or porcelain commands (e.g., `init`, `hash-object`, `commit`).
+//!
+//! The `git-rs` project is a from-scratch implementation of Git's core object
+//! storage engine, intended for educational purposes and systems programming practice.
+
 mod commit;
 mod config;
 mod object;
@@ -19,16 +28,19 @@ use crate::tree::write_tree;
 
 use clap::{Parser, Subcommand};
 
+/// The root command-line interface structure parsed by `clap`.
 #[derive(Parser)]
 #[command(
     name = "git-rs",
     about = "A from-scratch implementation of Git's core object storage engine in Rust."
 )]
 struct Cli {
+    /// The specific subcommand to execute.
     #[command(subcommand)]
     command: Commands,
 }
 
+/// The available Git commands supported by `git-rs`.
 #[derive(Subcommand)]
 enum Commands {
     /// Initialize a new git-rs repository
@@ -72,6 +84,10 @@ enum Commands {
     },
 }
 
+/// The main entry point of the `git-rs` application.
+///
+/// It initializes the CLI parser, determines the current working directory,
+/// and delegates execution to the corresponding command handler function.
 fn main() -> anyhow::Result<()> {
     // The magic happens here! clap reads env::args(), validates everything,
     // and populates the Cli struct.
@@ -114,8 +130,10 @@ fn main() -> anyhow::Result<()> {
     }
 }
 
-// DELETED: expect_args and run functions are no longer needed!
-
+/// Initializes a new, empty Git repository in the current directory.
+///
+/// Creates the `.git` directory structure, including `objects/`, `refs/`,
+/// a default `HEAD` pointer, and a default `.git/config` if one does not exist.
 fn cmd_init(repo_dir: &Path) -> anyhow::Result<()> {
     let git_dir = repo_dir.join(".git");
     fs::create_dir_all(git_dir.join("objects/info"))?;
@@ -134,6 +152,9 @@ fn cmd_init(repo_dir: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Reads an object from the Git database and outputs its content, type, or size.
+///
+/// Exactly one of `pretty`, `show_type`, or `show_size` must be true.
 fn cmd_cat_file(
     pretty: bool,
     show_type: bool,
@@ -155,6 +176,7 @@ fn cmd_cat_file(
     Ok(())
 }
 
+/// Computes the SHA-1 hash of a file's content and optionally writes it to the database as a blob.
 fn cmd_hash_object(file: &str, write: bool, dir: &Path) -> anyhow::Result<()> {
     let content = fs::read(file)?;
     if write {
@@ -166,12 +188,18 @@ fn cmd_hash_object(file: &str, write: bool, dir: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Recursively snapshots the working directory into a tree object.
+///
+/// Returns the SHA-1 hash of the resulting root tree object.
 fn cmd_write_tree(path: &Path, dir: &Path) -> anyhow::Result<String> {
     let tree_hash = write_tree(path, dir).context("Failed to write tree")?;
     Ok(tree_hash)
 }
 
-// FIXED: Removed the `flag` parameter and the `match flag` block
+/// Low-level plumbing command to create a commit object.
+///
+/// Requires an existing tree hash, a commit message, and an optional parent commit hash.
+/// Returns the SHA-1 hash of the newly created commit object.
 fn cmd_write_commit(
     tree_hash: &str,
     commit_message: &str,
@@ -183,6 +211,11 @@ fn cmd_write_commit(
     Ok(commit_hash)
 }
 
+/// High-level porcelain command to record changes to the repository.
+///
+/// Snapshots the current working directory, creates a commit object referencing
+/// the snapshot, sets the parent to the current HEAD, and updates HEAD to point
+/// to the new commit. Returns the SHA-1 hash of the newly created commit.
 fn cmd_commit(commit_message: &str, dir: &Path) -> anyhow::Result<String> {
     let current_path = Path::new(".");
     let tree_hash =

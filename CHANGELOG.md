@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-06-25
+
+### Added
+- **Deep Strict Documentation:** Added comprehensive, intent-revealing Rustdoc comments (`///` and `//!`) across all modules (`main.rs`, `object.rs`, `tree.rs`, `commit.rs`, `refs.rs`, `config.rs`). The documentation directly reflects the current codebase state, clearly defining architectural domain logic and providing context drawn from the project's history.
+- **GitHub Issue & PR Templates:** Created strict template structures (`.github/ISSUE_TEMPLATE/bug_report.md`, `.github/ISSUE_TEMPLATE/feature_request.md`) and refined `.github/PULL_REQUEST_TEMPLATE.md` to ensure better integrity and structured code review processes.
+
 ## [0.3.0] - 2026-06-25
 
 ### Added

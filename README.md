@@ -200,6 +200,7 @@ If official Git can read the database, the binary format is mathematically corre
 | [**Commit Objects & the DAG**](docs/04_commit_object_and_commit_tree.md) | **4** | **Commit object format, DAG structure, parent references, and serialization** |
 | [**DAG & Commit Serialization**](docs/05_dag_and_commit_serialization.md) | **4** | **Deep dive: DAG mathematics, commit serialization pipeline, content deduplication** |
 | [**Porcelain Commit & Refs**](docs/06_porcelain_commit_and_refs.md) | **5** | **`commit` workflow, `HEAD` resolution, branch pointer mutation, plumbing vs porcelain** |
+| [**Architectural Overview**](docs/architecture/overview.md) | **All** | **High-level summary of domain logic and core modules within the Rust codebase.** |
 
 ---
 

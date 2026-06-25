@@ -1,3 +1,9 @@
+//! # Git Commit Creation
+//!
+//! This module handles the construction and serialization of Git commit objects.
+//! A commit object links a tree (the snapshot) with metadata such as the author,
+//! committer, timestamp, and an optional parent commit to form the commit history (DAG).
+
 use crate::{config::get_author, object::write_object};
 use std::{
     io::Write,
@@ -6,6 +12,7 @@ use std::{
 };
 use thiserror::Error;
 
+/// Errors that can occur during commit creation and serialization.
 #[derive(Debug, Error)]
 pub enum CommitError {
     #[error("I/O error: {0}")]
@@ -17,6 +24,8 @@ pub enum CommitError {
     #[error("Object storage error: {0}")]
     Object(#[from] crate::object::ObjectError),
 }
+
+/// Represents a Git author or committer signature.
 pub struct Signature {
     name: String,
     email: String,
@@ -24,6 +33,7 @@ pub struct Signature {
     timezone: String,
 }
 
+/// Represents a Git commit object and its metadata.
 pub struct Commit {
     tree: String,
     author: Signature,
@@ -32,11 +42,16 @@ pub struct Commit {
     parent: Option<String>,
 }
 
+/// Retrieves the current system time as a UNIX timestamp (seconds since epoch).
 fn get_timestamp() -> Result<u64, CommitError> {
     let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
     Ok(timestamp)
 }
 
+/// Constructs a `Commit` struct with the provided tree, message, and parent.
+///
+/// Author and committer information are read from the repository's `.git/config`
+/// file, and the current system time is used for the timestamps.
 fn create_commit(
     tree_hash: &str,
     commit_message: &str,
@@ -68,6 +83,8 @@ fn create_commit(
     Ok(commit)
 }
 
+/// Serializes a `Commit` struct into the official Git ASCII format and writes
+/// it to the object database. Returns the SHA-1 hash of the commit object.
 fn write_commit(commit: &Commit, dir: &Path) -> Result<String, CommitError> {
     let mut serialized = Vec::new();
     writeln!(&mut serialized, "tree {}", commit.tree)?;
@@ -92,6 +109,10 @@ fn write_commit(commit: &Commit, dir: &Path) -> Result<String, CommitError> {
     Ok(oid)
 }
 
+/// High-level function to create and write a commit object in one step.
+///
+/// This serves as the primary entry point for commit creation from the CLI dispatcher.
+/// Returns the 40-character hex SHA-1 hash of the new commit object.
 pub fn write_commit_object(
     tree_hash: &str,
     commit_message: &str,
