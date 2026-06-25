@@ -1,3 +1,9 @@
+//! # Git Object Database Engine
+//!
+//! This module handles the core content-addressable storage mechanics of Git.
+//! It provides functionality for hashing, compressing (Zlib), serializing,
+//! reading, and writing raw Git objects (blobs, trees, commits).
+
 use flate2::{read::ZlibDecoder, write::ZlibEncoder, Compression};
 use sha1::{Digest, Sha1};
 use std::{
@@ -7,6 +13,7 @@ use std::{
 };
 use thiserror::Error;
 
+/// Errors that can occur during object serialization, deserialization, or storage.
 #[derive(Debug, Error)]
 pub enum ObjectError {
     // --- STANDARD LIBRARY ERRORS (Using #[from]) ---
@@ -40,6 +47,9 @@ pub enum ObjectError {
     InvalidObjectPath,
 }
 
+/// Formats a raw payload into a valid Git object by prepending the header.
+///
+/// The standard Git object format is: `<type> <size>\0<content>`
 fn create_object(kind: &str, content: &[u8]) -> Result<Vec<u8>, ObjectError> {
     //here we create the vector that will hold the object which we will return
     let mut obj = Vec::new();
@@ -49,6 +59,8 @@ fn create_object(kind: &str, content: &[u8]) -> Result<Vec<u8>, ObjectError> {
     Ok(obj)
 }
 
+/// Computes the cryptographic SHA-1 hash of an uncompressed Git object byte slice.
+/// Returns the hash as a 40-character hex string.
 fn hash_object(object: &[u8]) -> String {
     let mut hasher = Sha1::new();
     hasher.update(object);
@@ -57,6 +69,7 @@ fn hash_object(object: &[u8]) -> String {
     hash_hex
 }
 
+/// Compresses an uncompressed Git object byte slice using the Zlib algorithm.
 fn compress_object(object: &[u8]) -> Result<Vec<u8>, ObjectError> {
     let mut compressor = ZlibEncoder::new(Vec::new(), Compression::default());
     compressor.write_all(object)?;
@@ -64,6 +77,10 @@ fn compress_object(object: &[u8]) -> Result<Vec<u8>, ObjectError> {
     Ok(compressed?)
 }
 
+/// Locates, decompresses, and parses a Git object from the `.git/objects` directory.
+///
+/// Returns a tuple containing the object type as a `String` (e.g., "blob", "tree")
+/// and its raw binary content payload.
 pub fn read_object(hash: &str, dir: &Path) -> Result<(String, Vec<u8>), ObjectError> {
     // 1. Resolve the filesystem path for this hash
     let path = object_path(hash, dir)?;
@@ -105,6 +122,9 @@ pub fn read_object(hash: &str, dir: &Path) -> Result<(String, Vec<u8>), ObjectEr
     Ok((kind.to_string(), content))
 }
 
+/// Resolves the filesystem path for an object given its 40-character hex SHA-1 hash.
+///
+/// Git stores objects in `.git/objects/XX/YYY...` where `XX` is the first 2 hex chars.
 fn object_path(hash: &str, repo_dir: &Path) -> Result<PathBuf, ObjectError> {
     if hash.len() != 40 {
         return Err(ObjectError::InvalidHashLength);
@@ -116,6 +136,9 @@ fn object_path(hash: &str, repo_dir: &Path) -> Result<PathBuf, ObjectError> {
     Ok(path)
 }
 
+/// Creates, hashes, compresses, and writes a new object to the `.git/objects` directory.
+///
+/// Returns the calculated 40-character SHA-1 hex hash of the newly written object.
 pub fn write_object(kind: &str, content: &[u8], dir: &Path) -> Result<String, ObjectError> {
     let object = create_object(kind, content)?;
     let hashed_object = hash_object(&object);

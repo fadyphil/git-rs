@@ -1,6 +1,13 @@
+//! # Git References Management
+//!
+//! This module provides functions to read and mutate Git references (branches, tags)
+//! and the `HEAD` pointer. References in Git are simply text files containing a
+//! 40-character commit hash or a symbolic reference to another ref.
+
 use std::{fs, path::Path};
 use thiserror::Error;
 
+/// Errors that can occur when reading or updating Git references.
 #[derive(Debug, Error)]
 pub enum RefsError {
     #[error("I/O error {0}")]
@@ -12,6 +19,11 @@ pub enum RefsError {
     DetachedHead,
 }
 
+/// Reads the `.git/HEAD` file and returns the symbolic reference it points to.
+///
+/// For example, if HEAD contains `ref: refs/heads/main`, this function
+/// returns `"refs/heads/main"`. Detached HEAD states (where HEAD contains
+/// a raw commit hash) are currently not supported and will return an error.
 pub fn read_head(dir: &Path) -> Result<String, RefsError> {
     let path = dir.join(".git").join("HEAD");
     let contents = fs::read_to_string(path)?;
@@ -22,6 +34,8 @@ pub fn read_head(dir: &Path) -> Result<String, RefsError> {
     Ok(clean_path.to_string())
 }
 
+/// Reads a specific reference file (e.g., `.git/refs/heads/main`) and returns
+/// the 40-character commit hash it contains, if the file exists.
 pub fn read_ref(path: &str, dir: &Path) -> Result<Option<String>, RefsError> {
     let path = dir.join(".git").join(path);
     if !path.exists() {
@@ -32,6 +46,10 @@ pub fn read_ref(path: &str, dir: &Path) -> Result<Option<String>, RefsError> {
     Ok(Some(cleaned.to_string()))
 }
 
+/// Updates the current branch reference to point to a new commit hash.
+///
+/// This function first resolves `HEAD` to find the active branch reference,
+/// then overwrites that reference file with the provided `new_head_commit_hash`.
 pub fn update_current_ref(new_head_commit_hash: &str, dir: &Path) -> Result<(), RefsError> {
     let ref_path = read_head(dir)?;
     let head_file_path = dir.join(".git").join(ref_path);
