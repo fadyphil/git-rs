@@ -242,7 +242,7 @@ graph LR
     E --> F["History (DAG)"]
 ```
 
-The `commit-tree` command in `git-rs` currently uses hardcoded author/committer information for simplicity. In Phase 5, this will be configurable through Git's standard configuration mechanism (user.name, user.email) or environment variables.
+The `commit-tree` command in `git-rs` used hardcoded author/committer information for simplicity in Phase 4. In Phase 5, this is configurable through Git's standard configuration mechanism (user.name, user.email).
 
 ---
 
