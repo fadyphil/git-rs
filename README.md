@@ -19,7 +19,7 @@
   <img src="https://img.shields.io/badge/License-MIT-royalblue" alt="License" />
 </p>
 
-[![CI](https://github.com/<fadyphil>/git-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/<fadyphil>/git-rs/actions/workflows/ci.yml)
+[![CI](https://github.com/fadyphil/git-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/fadyphil/git-rs/actions/workflows/ci.yml)
 
 [Overview](#overview) • [Architecture](#architecture) • [Quick Start](#quick-start) • [Roadmap](#roadmap)
 
