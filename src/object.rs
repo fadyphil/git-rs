@@ -112,7 +112,7 @@ fn object_path(hash: &str, repo_dir: &Path) -> Result<PathBuf, ObjectError> {
     let base = repo_dir.join(".git").join("objects");
     let file_name = hash.get(2..).ok_or(ObjectError::InvalidHashLength)?;
     let dir = hash.get(..2).ok_or(ObjectError::InvalidHashLength)?;
-    let path = PathBuf::from(base).join(dir).join(file_name);
+    let path = base.join(dir).join(file_name);
     Ok(path)
 }
 
