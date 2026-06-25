@@ -76,36 +76,38 @@ fn main() -> anyhow::Result<()> {
     // The magic happens here! clap reads env::args(), validates everything,
     // and populates the Cli struct.
     let cli = Cli::parse();
+    let repodir =
+        std::env::current_dir().context("Failed to determine the current working directory")?;
 
     match cli.command {
-        Commands::Init => cmd_init(),
+        Commands::Init => cmd_init(&repodir),
 
         Commands::CatFile {
             pretty,
             r#type,
             size,
             hash,
-        } => cmd_cat_file(pretty, r#type, size, &hash),
+        } => cmd_cat_file(pretty, r#type, size, &hash, &repodir),
 
-        Commands::HashObject { write, file } => cmd_hash_object(&file, write),
+        Commands::HashObject { write, file } => cmd_hash_object(&file, write, &repodir),
 
         Commands::WriteTree => {
-            let tree_hash = cmd_write_tree(Path::new("."))?;
+            let tree_hash = cmd_write_tree(Path::new("."), &repodir)?;
             println!("{}", tree_hash);
             Ok(())
         }
 
         // FIXED: Used the correct destructured variables, added `?` and `println!`
         Commands::CommitTree { tree_hash, message } => {
-            let commit_hash = cmd_write_commit(&tree_hash, &message, None)?;
+            let commit_hash = cmd_write_commit(&tree_hash, &message, None, &repodir)?;
             println!("{}", commit_hash);
             Ok(())
         }
 
         // ADDED: The missing Commit match arm
         Commands::Commit { message } => {
-            let new_commit_hash = cmd_commit(&message)?;
-            update_current_ref(&new_commit_hash)?;
+            let new_commit_hash = cmd_commit(&message, &repodir)?;
+            update_current_ref(&new_commit_hash, &repodir)?;
             println!("{}", new_commit_hash);
             Ok(())
         }
@@ -114,23 +116,32 @@ fn main() -> anyhow::Result<()> {
 
 // DELETED: expect_args and run functions are no longer needed!
 
-fn cmd_init() -> anyhow::Result<()> {
-    fs::create_dir_all(".git/objects/info")?;
-    fs::create_dir_all(".git/objects/pack/")?;
-    fs::create_dir_all(".git/refs/heads/")?;
-    fs::create_dir_all(".git/refs/tags/")?;
-    fs::write(".git/HEAD", "ref: refs/heads/main\n")?;
-    if !Path::new(".git/config").exists() {
+fn cmd_init(repo_dir: &Path) -> anyhow::Result<()> {
+    let git_dir = repo_dir.join(".git");
+    fs::create_dir_all(git_dir.join("objects/info"))?;
+    fs::create_dir_all(git_dir.join("objects/pack/"))?;
+    fs::create_dir_all(git_dir.join("refs/heads/"))?;
+    fs::create_dir_all(git_dir.join("refs/tags/"))?;
+    fs::write(git_dir.join("HEAD"), "ref: refs/heads/main\n")?;
+
+    let config_path = git_dir.join("config");
+    if !config_path.exists() {
         fs::write(
-            ".git/config",
+            config_path,
             "[user]\nname = \"Your Name\"\nemail = \"you@example.com\"\n",
         )?;
     }
     Ok(())
 }
 
-fn cmd_cat_file(pretty: bool, show_type: bool, show_size: bool, hash: &str) -> anyhow::Result<()> {
-    let (kind, content) = read_object(hash).context("Failed to read git object from disk")?;
+fn cmd_cat_file(
+    pretty: bool,
+    show_type: bool,
+    show_size: bool,
+    hash: &str,
+    dir: &Path,
+) -> anyhow::Result<()> {
+    let (kind, content) = read_object(hash, dir).context("Failed to read git object from disk")?;
 
     if show_type {
         println!("{}", kind);
@@ -144,10 +155,10 @@ fn cmd_cat_file(pretty: bool, show_type: bool, show_size: bool, hash: &str) -> a
     Ok(())
 }
 
-fn cmd_hash_object(file: &str, write: bool) -> anyhow::Result<()> {
+fn cmd_hash_object(file: &str, write: bool, dir: &Path) -> anyhow::Result<()> {
     let content = fs::read(file)?;
     if write {
-        let hash = write_object("blob", &content).context("Failed to write object")?;
+        let hash = write_object("blob", &content, dir).context("Failed to write object")?;
         println!("{}", hash);
     } else {
         bail!("Without -w, hashing without writing is not yet implemented. Please use -w.");
@@ -155,8 +166,8 @@ fn cmd_hash_object(file: &str, write: bool) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn cmd_write_tree(path: &Path) -> anyhow::Result<String> {
-    let tree_hash = write_tree(path).context("Failed to write tree")?;
+fn cmd_write_tree(path: &Path, dir: &Path) -> anyhow::Result<String> {
+    let tree_hash = write_tree(path, dir).context("Failed to write tree")?;
     Ok(tree_hash)
 }
 
@@ -165,19 +176,21 @@ fn cmd_write_commit(
     tree_hash: &str,
     commit_message: &str,
     parent_hash: Option<&str>,
+    dir: &Path,
 ) -> anyhow::Result<String> {
-    let commit_hash = write_commit_object(tree_hash, commit_message, parent_hash)
+    let commit_hash = write_commit_object(tree_hash, commit_message, parent_hash, dir)
         .context("Failed to write commit to disk")?;
     Ok(commit_hash)
 }
 
-fn cmd_commit(commit_message: &str) -> anyhow::Result<String> {
+fn cmd_commit(commit_message: &str, dir: &Path) -> anyhow::Result<String> {
     let current_path = Path::new(".");
-    let tree_hash = write_tree(current_path).context("Failed to snapshot working directory")?;
-    let path = read_head().context("Failed to read HEAD pointer")?;
-    let ref_content = read_ref(&path).context("Failed to read current branch reference")?;
+    let tree_hash =
+        write_tree(current_path, dir).context("Failed to snapshot working directory")?;
+    let path = read_head(dir).context("Failed to read HEAD pointer")?;
+    let ref_content = read_ref(&path, dir).context("Failed to read current branch reference")?;
 
-    let commit_hash = write_commit_object(&tree_hash, commit_message, ref_content.as_deref())
+    let commit_hash = write_commit_object(&tree_hash, commit_message, ref_content.as_deref(), dir)
         .context("Failed to write commit to disk")?;
     Ok(commit_hash)
 }

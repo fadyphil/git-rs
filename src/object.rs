@@ -3,7 +3,7 @@ use sha1::{Digest, Sha1};
 use std::{
     fs,
     io::{Read, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 use thiserror::Error;
 
@@ -64,9 +64,9 @@ fn compress_object(object: &[u8]) -> Result<Vec<u8>, ObjectError> {
     Ok(compressed?)
 }
 
-pub fn read_object(hash: &str) -> Result<(String, Vec<u8>), ObjectError> {
+pub fn read_object(hash: &str, dir: &Path) -> Result<(String, Vec<u8>), ObjectError> {
     // 1. Resolve the filesystem path for this hash
-    let path = object_path(hash)?;
+    let path = object_path(hash, dir)?;
 
     // 2. Read the compressed bytes from disk
     let compressed = fs::read(&path)?;
@@ -105,20 +105,124 @@ pub fn read_object(hash: &str) -> Result<(String, Vec<u8>), ObjectError> {
     Ok((kind.to_string(), content))
 }
 
-fn object_path(hash: &str) -> Result<PathBuf, ObjectError> {
-    let base = ".git/objects/";
+fn object_path(hash: &str, repo_dir: &Path) -> Result<PathBuf, ObjectError> {
+    if hash.len() != 40 {
+        return Err(ObjectError::InvalidHashLength);
+    }
+    let base = repo_dir.join(".git").join("objects");
     let file_name = hash.get(2..).ok_or(ObjectError::InvalidHashLength)?;
     let dir = hash.get(..2).ok_or(ObjectError::InvalidHashLength)?;
-    let path = PathBuf::from(base).join(dir).join(file_name);
+    let path = base.join(dir).join(file_name);
     Ok(path)
 }
 
-pub fn write_object(kind: &str, content: &[u8]) -> Result<String, ObjectError> {
+pub fn write_object(kind: &str, content: &[u8], dir: &Path) -> Result<String, ObjectError> {
     let object = create_object(kind, content)?;
     let hashed_object = hash_object(&object);
     let compressed_object = compress_object(&object)?;
-    let path = object_path(&hashed_object)?;
+    let path = object_path(&hashed_object, dir)?;
     fs::create_dir_all(path.parent().ok_or(ObjectError::InvalidObjectPath)?)?;
     fs::write(path, compressed_object)?;
     Ok(hashed_object)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+
+    // --- PURE TESTS ---
+    #[test]
+    fn test_create_object_formatting() {
+        let result = create_object("blob", b"test content").unwrap();
+        let mut expected = b"blob 12\0".to_vec();
+        expected.extend_from_slice(b"test content");
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_create_object_empty() {
+        let result = create_object("blob", b"").unwrap();
+        assert_eq!(result, b"blob 0\0".to_vec());
+    }
+
+    #[test]
+    fn test_hash_object_known_value() {
+        let obj = b"blob 0\0".to_vec();
+        let hash = hash_object(&obj);
+        assert_eq!(hash, "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391");
+    }
+
+    #[test]
+    fn test_object_path_valid() {
+        let dir = tempdir().unwrap();
+        let hash = "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2";
+        let path = object_path(hash, dir.path()).unwrap();
+        assert_eq!(
+            path,
+            dir.path()
+                .join(".git/objects/a1/b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2")
+        );
+    }
+
+    #[test]
+    fn test_object_path_too_short() {
+        let dir = tempdir().unwrap();
+        let result = object_path("abc", dir.path());
+        assert!(matches!(
+            result.unwrap_err(),
+            ObjectError::InvalidHashLength
+        ));
+    }
+
+    // --- IMPURE TESTS (Now completely isolated!) ---
+    #[test]
+    fn test_write_and_read_roundtrip() {
+        let dir = tempdir().unwrap();
+        fs::create_dir_all(dir.path().join(".git/objects")).unwrap();
+
+        let content = b"hello world";
+        let hash = write_object("blob", content, dir.path()).unwrap();
+        let (kind, read_content) = read_object(&hash, dir.path()).unwrap();
+
+        assert_eq!(kind, "blob");
+        assert_eq!(read_content, content);
+    }
+
+    #[test]
+    fn test_read_object_corrupt_missing_null() {
+        let dir = tempdir().unwrap();
+        let hash = "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2";
+        let path = object_path(hash, dir.path()).unwrap();
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+
+        let mut compressor = ZlibEncoder::new(Vec::new(), Compression::default());
+        compressor.write_all(b"blob 5hello").unwrap();
+        fs::write(path, compressor.finish().unwrap()).unwrap();
+
+        let result = read_object(hash, dir.path());
+        assert!(matches!(
+            result.unwrap_err(),
+            ObjectError::MissingNullSeparator
+        ));
+    }
+
+    #[test]
+    fn test_read_object_corrupt_size_mismatch() {
+        let dir = tempdir().unwrap();
+        let hash = "b1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2";
+        let path = object_path(hash, dir.path()).unwrap();
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+
+        let mut compressor = ZlibEncoder::new(Vec::new(), Compression::default());
+        compressor.write_all(b"blob 99\0hello").unwrap();
+        fs::write(path, compressor.finish().unwrap()).unwrap();
+
+        let result = read_object(hash, dir.path());
+        assert!(matches!(
+            result.unwrap_err(),
+            ObjectError::SizeMismatch { .. }
+        ));
+    }
 }

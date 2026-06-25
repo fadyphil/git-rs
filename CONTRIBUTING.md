@@ -67,3 +67,12 @@ refactor(object): eliminate intermediate heap allocations in create_object
 
 Replaced format!().as_bytes() + extend_from_slice patterns with the write! macro.
 ```
+
+## Continuous Integration (CI)
+
+All Pull Requests are automatically tested against our GitHub Actions pipeline. To ensure your PR is green, run the following locally before pushing:
+
+```bash
+cargo fmt --all
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test --all
