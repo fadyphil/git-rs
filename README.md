@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Status-Phase_4_Complete-success?" alt="Status" />
+  <img src="https://img.shields.io/badge/Status-Phase_5_Complete-success?" alt="Status" />
   <img src="https://img.shields.io/badge/License-MIT-royalblue" alt="License" />
 </p>
 

@@ -1,6 +1,6 @@
 [package]
 name = "git-rs"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["Fady Philip <fadyph2003@gmail.com>"]
 description = "A from-scratch implementation of Git's core object storage engine in Rust."

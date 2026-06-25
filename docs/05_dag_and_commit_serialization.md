@@ -276,7 +276,7 @@ Fady <fady@test.com> 1718000000 +0000
 | Cherry-pick | Alice (original author) | Bob (performed the cherry-pick) |
 | Rebase | Alice (original author) | Bob (performed the rebase) |
 
-In `git-rs` Phase 4, author and committer are identical for simplicity. Phase 5 will support reading these from Git configuration or environment variables.
+In `git-rs` Phase 4, author and committer are identical for simplicity. Phase 5 supports reading these from Git configuration.
 
 ---
 
@@ -309,7 +309,7 @@ Even though there are 3 commits, `blob-a` and `blob-c` are each stored only once
 The `commit-tree` command in `git-rs` implements the following:
 
 1. **Parses arguments** (tree hash, `-m` flag, message)
-2. **Constructs a Commit struct** with hardcoded author info (Phase 5 will make this configurable)
+2. **Constructs a Commit struct** with hardcoded author info (Phase 5 makes this configurable)
 3. **Generates timestamp** using Unix epoch seconds
 4. **Serializes the commit** to text with proper line endings
 5. **Calls `write_object("commit", ...)`** to hash, compress, store, and return the hash
