@@ -60,3 +60,73 @@ pub fn write_tree(path: &Path, dir: &Path) -> Result<String, TreeError> {
     }
     Ok(write_object("tree", &formatted_tree_entries, dir)?)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::object::read_object;
+    use std::fs;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_write_tree_empty_dir() {
+        let dir = tempdir().unwrap();
+        let hash = write_tree(dir.path(), dir.path()).unwrap();
+        assert_eq!(hash.len(), 40);
+
+        let (kind, content) = read_object(&hash, dir.path()).unwrap();
+        assert_eq!(kind, "tree");
+        assert!(
+            content.is_empty(),
+            "Empty directory should produce empty tree content"
+        );
+    }
+
+    #[test]
+    fn test_write_tree_sorting_and_modes() {
+        let dir = tempdir().unwrap();
+        // Arrange: Create files in reverse alphabetical order
+        fs::write(dir.path().join("zebra.txt"), "z").unwrap();
+        fs::write(dir.path().join("apple.txt"), "a").unwrap();
+        fs::create_dir(dir.path().join("banana_dir")).unwrap();
+
+        // Act
+        let hash = write_tree(dir.path(), dir.path()).unwrap();
+
+        // Assert: Read the raw bytes of the tree object
+        let (kind, content) = read_object(&hash, dir.path()).unwrap();
+        assert_eq!(kind, "tree");
+
+        let text = String::from_utf8_lossy(&content);
+
+        // Verify alphabetical sorting: apple -> banana_dir -> zebra
+        let apple_pos = text.find("apple.txt").unwrap();
+        let banana_pos = text.find("banana_dir").unwrap();
+        let zebra_pos = text.find("zebra.txt").unwrap();
+
+        assert!(apple_pos < banana_pos, "apple should come before banana");
+        assert!(banana_pos < zebra_pos, "banana should come before zebra");
+
+        // Verify modes
+        assert!(text.contains("100644"), "Files should have 100644 mode");
+        assert!(
+            text.contains("040000"),
+            "Directories should have 040000 mode"
+        );
+    }
+
+    #[test]
+    fn test_write_tree_ignores_git_dir() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("file.txt"), "data").unwrap();
+        fs::create_dir(dir.path().join(".git")).unwrap();
+        fs::write(dir.path().join(".git/HEAD"), "ref: refs/heads/main").unwrap();
+
+        let hash = write_tree(dir.path(), dir.path()).unwrap();
+        let (_, content) = read_object(&hash, dir.path()).unwrap();
+        let text = String::from_utf8_lossy(&content);
+
+        assert!(text.contains("file.txt"));
+        assert!(!text.contains(".git"), "Tree should ignore .git directory");
+    }
+}
