@@ -20,7 +20,7 @@ pub struct TreeEntry {
     pub hash: String,
 }
 
-pub fn write_tree(path: &Path) -> Result<String, TreeError> {
+pub fn write_tree(path: &Path, dir: &Path) -> Result<String, TreeError> {
     let entries = fs::read_dir(path)?;
     let mut array_of_entries: Vec<TreeEntry> = Vec::new();
 
@@ -33,14 +33,14 @@ pub fn write_tree(path: &Path) -> Result<String, TreeError> {
 
         if entry.path().is_file() {
             let content = fs::read(entry.path())?;
-            let object = write_object("blob", &content)?;
+            let object = write_object("blob", &content, dir)?;
             array_of_entries.push(TreeEntry {
                 mode: "100644".to_string(),
                 name: entry.file_name().to_string_lossy().into_owned(),
                 hash: object,
             });
         } else if entry.path().is_dir() {
-            let hashed_object = write_tree(&entry.path())?;
+            let hashed_object = write_tree(&entry.path(), dir)?;
             array_of_entries.push(TreeEntry {
                 mode: "040000".to_string(),
                 name: entry.file_name().to_string_lossy().into_owned(),
@@ -58,5 +58,5 @@ pub fn write_tree(path: &Path) -> Result<String, TreeError> {
         )?;
         formatted_tree_entries.extend_from_slice(&hex::decode(&entry.hash)?);
     }
-    Ok(write_object("tree", &formatted_tree_entries)?)
+    Ok(write_object("tree", &formatted_tree_entries, dir)?)
 }

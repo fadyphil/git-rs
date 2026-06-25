@@ -1,6 +1,7 @@
 use crate::{config::get_author, object::write_object};
 use std::{
     io::Write,
+    path::Path,
     time::{SystemTime, UNIX_EPOCH},
 };
 use thiserror::Error;
@@ -66,7 +67,7 @@ fn create_commit(
     Ok(commit)
 }
 
-fn write_commit(commit: &Commit) -> Result<String, CommitError> {
+fn write_commit(commit: &Commit, dir: &Path) -> Result<String, CommitError> {
     let mut serialized = Vec::new();
     writeln!(&mut serialized, "tree {}", commit.tree)?;
     if let Some(parent_hash) = &commit.parent {
@@ -86,7 +87,7 @@ fn write_commit(commit: &Commit) -> Result<String, CommitError> {
         commit.committer.timezone
     )?;
     write!(&mut serialized, "\n{}\n", commit.message)?;
-    let oid = write_object("commit", &serialized)?;
+    let oid = write_object("commit", &serialized, dir)?;
     Ok(oid)
 }
 
@@ -94,8 +95,9 @@ pub fn write_commit_object(
     tree_hash: &str,
     commit_message: &str,
     parent_hash: Option<&str>,
+    dir: &Path,
 ) -> Result<String, CommitError> {
     let commit = create_commit(tree_hash, commit_message, parent_hash)?;
-    let commit_hash = write_commit(&commit)?;
+    let commit_hash = write_commit(&commit, dir)?;
     Ok(commit_hash)
 }

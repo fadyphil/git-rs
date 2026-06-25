@@ -3,7 +3,7 @@ use sha1::{Digest, Sha1};
 use std::{
     fs,
     io::{Read, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 use thiserror::Error;
 
@@ -64,9 +64,9 @@ fn compress_object(object: &[u8]) -> Result<Vec<u8>, ObjectError> {
     Ok(compressed?)
 }
 
-pub fn read_object(hash: &str) -> Result<(String, Vec<u8>), ObjectError> {
+pub fn read_object(hash: &str, dir: &Path) -> Result<(String, Vec<u8>), ObjectError> {
     // 1. Resolve the filesystem path for this hash
-    let path = object_path(hash)?;
+    let path = object_path(hash, dir)?;
 
     // 2. Read the compressed bytes from disk
     let compressed = fs::read(&path)?;
@@ -105,19 +105,22 @@ pub fn read_object(hash: &str) -> Result<(String, Vec<u8>), ObjectError> {
     Ok((kind.to_string(), content))
 }
 
-fn object_path(hash: &str) -> Result<PathBuf, ObjectError> {
-    let base = ".git/objects/";
+fn object_path(hash: &str, repo_dir: &Path) -> Result<PathBuf, ObjectError> {
+    if hash.len() != 40 {
+        return Err(ObjectError::InvalidHashLength);
+    }
+    let base = repo_dir.join(".git").join("objects");
     let file_name = hash.get(2..).ok_or(ObjectError::InvalidHashLength)?;
     let dir = hash.get(..2).ok_or(ObjectError::InvalidHashLength)?;
     let path = PathBuf::from(base).join(dir).join(file_name);
     Ok(path)
 }
 
-pub fn write_object(kind: &str, content: &[u8]) -> Result<String, ObjectError> {
+pub fn write_object(kind: &str, content: &[u8], dir: &Path) -> Result<String, ObjectError> {
     let object = create_object(kind, content)?;
     let hashed_object = hash_object(&object);
     let compressed_object = compress_object(&object)?;
-    let path = object_path(&hashed_object)?;
+    let path = object_path(&hashed_object, dir)?;
     fs::create_dir_all(path.parent().ok_or(ObjectError::InvalidObjectPath)?)?;
     fs::write(path, compressed_object)?;
     Ok(hashed_object)
